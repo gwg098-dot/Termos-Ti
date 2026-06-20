@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Assinatura do Termo — TI</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #f5f5f5;
+    --surface: #ffffff;
+    --border: #e0e0e0;
+    --accent: #cc0000;
+    --text: #111111;
+    --text2: #555555;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    padding: 32px 20px 64px;
+  }
+
+  .header {
+    max-width: 640px;
+    margin: 0 auto 28px;
+  }
+
+  .header-top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 6px;
+  }
+
+  .logo {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, #cc0000, #990000);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+
+  h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.3px; }
+
+  .subtitle { color: var(--text2); font-size: 13px; margin-left: 50px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    max-width: 640px;
+    margin: 0 auto 18px;
+  }
+
+  .card-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--text2);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 20px;
+  }
+
+  .info-item label {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+    color: var(--text2);
+    margin-bottom: 3px;
+  }
+
+  .info-item .val { font-size: 14px; color: var(--text); }
+  .info-item.full { grid-column: 1 / -1; }
+
+  .badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .4px;
+  }
+  .badge-resp   { background: #fde8e8; color: #cc0000; }
+  .badge-dev    { background: #e8f0fd; color: #1a56db; }
+  .badge-troca  { background: #fdf3e8; color: #b45309; }
+
+  .sig-canvas-wrap {
+    position: relative;
+    border: 1.5px dashed var(--border);
+    border-radius: 10px;
+    height: 150px;
+    background: #fafafa;
+    touch-action: none;
+    overflow: hidden;
+  }
+  .sig-canvas { width: 100%; height: 100%; display: block; cursor: crosshair; }
+  .sig-placeholder {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #aaa; font-size: 13px; pointer-events: none;
+  }
+  .sig-placeholder.hidden { display: none; }
+
+  .field { margin-top: 14px; }
+  .field label {
+    display: block; font-size: 11px; font-weight: 600;
+    letter-spacing: .5px; text-transform: uppercase;
+    color: var(--text2); margin-bottom: 6px;
+  }
+  .field input {
+    width: 100%; padding: 11px 14px;
+    border: 1.5px solid var(--border); border-radius: 8px;
+    font-size: 14px; font-family: inherit; background: #fff;
+  }
+  .field input:focus { outline: none; border-color: var(--accent); }
+
+  .sig-actions { display: flex; justify-content: flex-end; margin-top: 8px; }
+  .sig-clear {
+    background: none; border: none; color: var(--text2);
+    font-size: 12px; cursor: pointer; text-decoration: underline;
+  }
+
+  .btn-assinar {
+    width: 100%; padding: 15px;
+    background: var(--accent); color: #fff;
+    border: none; border-radius: 10px;
+    font-size: 15px; font-weight: 600;
+    font-family: inherit; cursor: pointer;
+    max-width: 640px; margin: 4px auto 0; display: block;
+  }
+  .btn-assinar:disabled { opacity: .5; cursor: default; }
+
+  .center-msg {
+    max-width: 640px; margin: 80px auto; text-align: center;
+    color: var(--text2); font-size: 15px; line-height: 1.6;
+  }
+  .center-msg .icon { font-size: 40px; margin-bottom: 16px; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px);
+    background: #16a34a; color: #fff; padding: 14px 22px; border-radius: 10px;
+    font-size: 14px; font-weight: 500; transition: transform .3s ease; z-index: 999;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="center-msg" id="loading-msg">
+    <div class="icon">⏳</div>
+    Carregando termo...
+  </div>
+</div>
+
+<div class="toast" id="toast">✓ Termo assinado com sucesso!</div>
+
+<script>
+const SUPABASE_URL = 'https://yiwlasnckmqodidrfpxn.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_ZFI3RmUPg604G19RtXvkuw_ASo2AbPe';
+const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const TIPO_LABEL = { responsabilidade: 'Termo de Responsabilidade', devolucao: 'Termo de Devolução', troca: 'Termo de Troca de Equipamento' };
+const TIPO_BADGE = { responsabilidade: 'badge-resp', devolucao: 'badge-dev', troca: 'badge-troca' };
+
+const params = new URLSearchParams(window.location.search);
+const token = params.get('token');
+
+let sigCtx = null;
+let sigHasContent = false;
+
+function el(html) {
+  const d = document.createElement('div');
+  d.innerHTML = html.trim();
+  return d.firstChild;
+}
+
+function infoItem(label, val, full=false) {
+  if (!val) return '';
+  return `<div class="info-item${full ? ' full' : ''}"><label>${label}</label><div class="val">${escapeHtml(val)}</div></div>`;
+}
+
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = String(str);
+  return d.innerHTML;
+}
+
+async function init() {
+  if (!token) {
+    renderErro('Link inválido. Verifique se o link foi copiado corretamente.');
+    return;
+  }
+
+  const { data, error } = await sbClient
+    .from('termos_pendentes')
+    .select('dados_json, status, expires_at')
+    .eq('token', token)
+    .maybeSingle();
+
+  if (error) {
+    console.error(error);
+    renderErro('Não foi possível carregar o termo. Tente novamente em instantes.');
+    return;
+  }
+
+  if (!data) {
+    renderErro('Termo não encontrado. O link pode ter expirado ou já ter sido utilizado.');
+    return;
+  }
+
+  if (data.status === 'assinado') {
+    renderJaAssinado();
+    return;
+  }
+
+  if (data.status !== 'pendente' || new Date(data.expires_at) < new Date()) {
+    renderErro('Este link expirou. Solicite um novo link ao responsável de TI.');
+    return;
+  }
+
+  renderFormulario(data.dados_json);
+}
+
+function renderErro(msg) {
+  document.getElementById('app').innerHTML = `
+    <div class="center-msg">
+      <div class="icon">⚠</div>
+      ${escapeHtml(msg)}
+    </div>`;
+}
+
+function renderJaAssinado() {
+  document.getElementById('app').innerHTML = `
+    <div class="center-msg">
+      <div class="icon">✓</div>
+      Este termo já foi assinado.<br>Nenhuma ação adicional é necessária.
+    </div>`;
+}
+
+function renderFormulario(dados) {
+  const isResp  = dados.tipo === 'responsabilidade';
+  const isDev   = dados.tipo === 'devolucao';
+  const isTroca = dados.tipo === 'troca';
+
+  let equipTitle = isTroca ? 'Equipamento Entregue' : (isResp ? 'Equipamento Recebido' : 'Equipamento a Devolver');
+
+  let html = `
+    <div class="header">
+      <div class="header-top">
+        <div class="logo">📄</div>
+        <h1>Assinatura do Termo</h1>
+      </div>
+      <div class="subtitle">${escapeHtml(dados.empresa || '')} — confira os dados antes de assinar</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">${escapeHtml(TIPO_LABEL[dados.tipo] || 'Termo')}</div>
+      <span class="badge ${TIPO_BADGE[dados.tipo] || ''}">${escapeHtml(TIPO_LABEL[dados.tipo] || dados.tipo)}</span>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Dados do Colaborador</div>
+      <div class="info-grid">
+        ${infoItem('Nome', dados.nome, true)}
+        ${infoItem('Matrícula', dados.matricula)}
+        ${infoItem('E-mail', dados.email)}
+        ${infoItem('Telefone', dados.telefone)}
+        ${infoItem('Departamento', dados.departamento)}
+        ${infoItem('Cargo', dados.cargo)}
+        ${infoItem('Unidade', dados.unidade)}
+        ${infoItem('Chamado', dados.chamado)}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">${escapeHtml(equipTitle)}</div>
+      <div class="info-grid">
+        ${infoItem('Descrição', dados.equipamento?.descricao)}
+        ${infoItem('Modelo', dados.equipamento?.modelo)}
+        ${infoItem('Número de Série', dados.equipamento?.serie)}
+        ${infoItem('Patrimônio / IMEI', dados.equipamento?.patrimonio)}
+        ${infoItem('Linha Telefônica', dados.equipamento?.linhaTelefonica)}
+        ${infoItem('Acessórios', dados.equipamento?.acessorios, true)}
+      </div>
+    </div>
+  `;
+
+  if (isTroca && dados.equipamentoDevolvido) {
+    html += `
+    <div class="card">
+      <div class="card-title">Equipamento Devolvido</div>
+      <div class="info-grid">
+        ${infoItem('Descrição', dados.equipamentoDevolvido.descricao)}
+        ${infoItem('Modelo', dados.equipamentoDevolvido.modelo)}
+        ${infoItem('Número de Série', dados.equipamentoDevolvido.serie)}
+        ${infoItem('Patrimônio / IMEI', dados.equipamentoDevolvido.patrimonio)}
+      </div>
+    </div>`;
+  }
+
+  const condicao = isTroca ? dados.condicaoTroca : (isDev ? dados.condicao : null);
+  if (condicao) {
+    html += `
+    <div class="card">
+      <div class="card-title">Condição do Equipamento</div>
+      <div class="info-grid">
+        ${infoItem('Estado', condicao.valor === 'avarias' ? 'Com avarias' : 'Em perfeito estado de funcionamento', true)}
+        ${condicao.avarias ? infoItem('Descrição das avarias', condicao.avarias, true) : ''}
+      </div>
+    </div>`;
+  }
+
+  html += `
+    <div class="card">
+      <div class="card-title">Confirmação e Assinatura</div>
+      <div style="font-size:13px; color:var(--text2); line-height:1.6; margin-bottom:16px;">
+        Ao assinar abaixo, você confirma que leu e está de acordo com os dados apresentados neste termo.
+      </div>
+
+      <div class="field">
+        <label>Nome completo (para confirmação)</label>
+        <input type="text" id="nome-assinante" placeholder="Digite seu nome completo" />
+      </div>
+
+      <div class="field">
+        <label>Assinatura</label>
+        <div class="sig-canvas-wrap" id="wrap-sig">
+          <canvas id="sig-canvas" class="sig-canvas"></canvas>
+          <div class="sig-placeholder" id="sig-placeholder">✍ Assine aqui com o dedo ou mouse</div>
+        </div>
+        <div class="sig-actions">
+          <button class="sig-clear" onclick="clearSig()">Limpar</button>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-assinar" id="btn-assinar" onclick="confirmarAssinatura()">Confirmar Assinatura</button>
+  `;
+
+  document.getElementById('app').innerHTML = html;
+  initSigPad();
+}
+
+function initSigPad() {
+  const canvas = document.getElementById('sig-canvas');
+  const wrap = document.getElementById('wrap-sig');
+  const ph = document.getElementById('sig-placeholder');
+
+  function fitCanvas() {
+    const w = wrap.offsetWidth || 300;
+    const h = 150;
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.strokeStyle = '#111111';
+    ctx.fillStyle = '#111111';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    sigCtx = ctx;
+  }
+  fitCanvas();
+  window.addEventListener('resize', () => { if (!sigHasContent) fitCanvas(); });
+
+  let drawing = false, lx = 0, ly = 0;
+
+  function pos(e) {
+    const r = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / r.width;
+    const scaleY = canvas.height / r.height;
+    let cx, cy;
+    if (e.changedTouches && e.changedTouches.length) { cx = e.changedTouches[0].clientX; cy = e.changedTouches[0].clientY; }
+    else if (e.touches && e.touches.length) { cx = e.touches[0].clientX; cy = e.touches[0].clientY; }
+    else { cx = e.clientX; cy = e.clientY; }
+    return { x: (cx - r.left) * scaleX, y: (cy - r.top) * scaleY };
+  }
+
+  function onStart(e) {
+    e.preventDefault(); e.stopPropagation();
+    drawing = true;
+    const p = pos(e); lx = p.x; ly = p.y;
+    sigCtx.beginPath(); sigCtx.moveTo(lx, ly);
+    sigCtx.arc(lx, ly, 1.2, 0, Math.PI * 2); sigCtx.fill();
+    sigCtx.beginPath(); sigCtx.moveTo(lx, ly);
+  }
+  function onMove(e) {
+    if (!drawing) return;
+    e.preventDefault(); e.stopPropagation();
+    const p = pos(e);
+    sigCtx.lineTo(p.x, p.y); sigCtx.stroke();
+    sigCtx.beginPath(); sigCtx.moveTo(p.x, p.y);
+    lx = p.x; ly = p.y;
+    if (!sigHasContent) { sigHasContent = true; ph.classList.add('hidden'); }
+  }
+  function onStop() { drawing = false; sigCtx.beginPath(); }
+
+  canvas.addEventListener('mousedown', onStart);
+  canvas.addEventListener('mousemove', onMove);
+  canvas.addEventListener('mouseup', onStop);
+  canvas.addEventListener('mouseleave', onStop);
+  canvas.addEventListener('touchstart', onStart, { passive: false });
+  canvas.addEventListener('touchmove', onMove, { passive: false });
+  canvas.addEventListener('touchend', onStop, { passive: false });
+}
+
+function clearSig() {
+  const canvas = document.getElementById('sig-canvas');
+  sigCtx.clearRect(0, 0, canvas.width, canvas.height);
+  sigHasContent = false;
+  document.getElementById('sig-placeholder').classList.remove('hidden');
+}
+
+async function confirmarAssinatura() {
+  const nome = document.getElementById('nome-assinante').value.trim();
+  if (!nome) { alert('Digite seu nome completo antes de assinar.'); return; }
+  if (!sigHasContent) { alert('Assine no campo indicado antes de confirmar.'); return; }
+
+  const btn = document.getElementById('btn-assinar');
+  btn.disabled = true;
+  btn.textContent = '⏳ Enviando...';
+
+  const assinaturaDataUrl = document.getElementById('sig-canvas').toDataURL('image/png');
+
+  const { data, error } = await sbClient
+    .from('termos_pendentes')
+    .update({
+      assinatura_colaborador: assinaturaDataUrl,
+      nome_assinante: nome,
+      status: 'assinado',
+      signed_at: new Date().toISOString()
+    })
+    .eq('token', token)
+    .eq('status', 'pendente')
+    .select();
+
+  if (error || !data || data.length === 0) {
+    console.error(error);
+    alert('Não foi possível confirmar a assinatura. Tente novamente.');
+    btn.disabled = false;
+    btn.textContent = 'Confirmar Assinatura';
+    return;
+  }
+
+  document.getElementById('toast').classList.add('show');
+  setTimeout(() => { renderJaAssinado(); }, 1200);
+}
+
+init();
+</script>
+</body>
+</html>
