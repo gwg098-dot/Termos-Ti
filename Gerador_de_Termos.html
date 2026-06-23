@@ -1,0 +1,2435 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerador de Termos — TI</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #f5f5f5;
+    --surface: #ffffff;
+    --surface2: #fafafa;
+    --border: #e0e0e0;
+    --accent: #cc0000;
+    --accent2: #990000;
+    --text: #111111;
+    --text2: #555555;
+    --green: #cc0000;
+    --red: #cc0000;
+    --yellow: #cc0000;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    padding: 32px 24px 64px;
+  }
+
+  .header {
+    max-width: 720px;
+    margin: 0 auto 40px;
+  }
+
+  .header-top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 6px;
+  }
+
+  .logo {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, #cc0000, #990000);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+
+  h1 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+  }
+
+  .subtitle {
+    color: var(--text2);
+    font-size: 13px;
+    margin-left: 50px;
+  }
+
+  .card {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+    max-width: 720px;
+    margin: 0 auto 20px;
+  }
+
+  .card-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--text2);
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Toggle tipo */
+  .toggle-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .toggle-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: all 0.18s;
+    text-align: left;
+  }
+
+  .toggle-btn:hover {
+    border-color: var(--accent);
+  }
+
+  .toggle-btn.active {
+    background: rgba(204,0,0,0.08);
+    border-color: var(--accent);
+  }
+
+  .toggle-btn .btn-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    display: block;
+  }
+
+  .toggle-btn .btn-desc {
+    font-size: 11px;
+    color: var(--text2);
+    margin-top: 2px;
+  }
+
+  /* Vínculo Fleury / Pardini */
+  .vinculo-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .vinculo-btn {
+    background: var(--surface2);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 16px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text2);
+    transition: all 0.18s;
+  }
+
+  .vinculo-btn:hover { border-color: var(--accent); color: var(--text); }
+  .vinculo-btn.active {
+    background: rgba(204,0,0,0.08);
+    border-color: var(--accent);
+    color: var(--text);
+  }
+
+  /* Empresa dropdown */
+  .empresa-dropdown-wrap {
+    position: relative;
+  }
+
+  .empresa-display {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    transition: border-color 0.18s;
+    user-select: none;
+  }
+
+  .empresa-display:hover,
+  .empresa-display.open {
+    border-color: var(--accent);
+    background: rgba(204,0,0,0.04);
+  }
+
+  .empresa-arrow {
+    font-size: 12px;
+    color: var(--text2);
+    transition: transform 0.2s;
+  }
+
+  .empresa-arrow.open {
+    transform: rotate(180deg);
+  }
+
+  .empresa-list-wrap {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0; right: 0;
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.10);
+    z-index: 100;
+    overflow: hidden;
+  }
+
+  .empresa-list-wrap.open {
+    display: block;
+  }
+
+  .empresa-search-wrap {
+    padding: 10px 10px 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .empresa-search-wrap input {
+    border-radius: 6px;
+    font-size: 12px;
+    padding: 7px 10px;
+  }
+
+  .empresa-list {
+    list-style: none;
+    max-height: 240px;
+    overflow-y: auto;
+    margin: 0;
+    padding: 6px 0;
+  }
+
+  .empresa-list li {
+    padding: 9px 16px;
+    font-size: 13px;
+    color: var(--text2);
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+  }
+
+  .empresa-list li:hover {
+    background: rgba(204,0,0,0.06);
+    color: var(--text);
+  }
+
+  .empresa-list li.active {
+    background: rgba(204,0,0,0.10);
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .empresa-list li.hidden {
+    display: none;
+  }
+
+  /* Campos */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid-1 { display: grid; grid-template-columns: 1fr; gap: 14px; }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: var(--text2);
+    text-transform: uppercase;
+  }
+
+  input, select, textarea {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    transition: border-color 0.18s;
+    width: 100%;
+    outline: none;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+    background: rgba(204,0,0,0.04);
+  }
+
+  input::placeholder, textarea::placeholder { color: var(--text2); opacity: 0.5; }
+  select option { background: #ffffff; }
+
+  textarea {
+    resize: vertical;
+    min-height: 72px;
+  }
+
+  .section-sep {
+    height: 1px;
+    background: var(--border);
+    margin: 22px 0;
+  }
+
+  /* Checkbox avarias */
+  .check-row {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  .check-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text2);
+  }
+
+  .check-option input[type="radio"] {
+    width: 16px; height: 16px;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  .check-option.selected { color: var(--text); }
+
+  /* Botão gerar */
+  .btn-gerar {
+    display: block;
+    width: 100%;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 16px;
+    background: linear-gradient(135deg, #cc0000, #990000);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.18s, transform 0.1s;
+    letter-spacing: 0.2px;
+  }
+
+  .btn-gerar:hover { opacity: 0.92; transform: translateY(-1px); }
+  #btn-onedrive { background: #0078d4; }
+  #btn-onedrive:hover { background: #106ebe !important; transform: translateY(-1px); }
+  #btn-onedrive:disabled, #btn-gerar:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+  .btn-gerar:active { transform: translateY(0); }
+
+  .btn-gerar:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--accent);
+    color: #ffffff;
+    padding: 12px 24px;
+    border-radius: 40px;
+    font-size: 13px;
+    font-weight: 600;
+    transition: transform 0.3s cubic-bezier(.34,1.56,.64,1);
+    z-index: 999;
+    white-space: nowrap;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* Info tag */
+  .info-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(79,142,247,0.12);
+    border: 1px solid rgba(79,142,247,0.3);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 500;
+    margin-top: 10px;
+  }
+
+  .avarias-section { display: none; }
+  .avarias-section.visible { display: block; }
+
+  /* Caixa de leitura antes das assinaturas */
+  .leitura-box {
+    display: block;
+    background: #f8f9fd;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 18px;
+    max-height: 320px;
+    overflow-y: auto;
+    font-size: 12px;
+    line-height: 1.65;
+    color: var(--text2);
+    white-space: pre-wrap;
+  }
+
+
+  .leitura-box-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .leitura-box.azul {
+    border-left-color: #1e5ac8;
+  }
+
+  /* Label de bloco de equipamento (Troca) */
+  .equip-bloco-titulo {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 10px;
+    padding: 6px 10px;
+    background: rgba(204,0,0,0.06);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+  }
+
+  .equip-bloco-azul {
+    background: rgba(30,90,200,0.07);
+    border-left-color: #1e5ac8;
+    color: #1e5ac8;
+  }
+
+  /* Seletor de equipamento */
+  .equip-selector {
+    margin-bottom: 4px;
+  }
+
+  .equip-selector label {
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  .equip-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .equip-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: all 0.18s;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text2);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .equip-btn:hover {
+    border-color: var(--accent);
+    color: var(--text);
+  }
+
+  .equip-btn.active {
+    background: rgba(204,0,0,0.08);
+    border-color: var(--accent);
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  @media (max-width: 560px) {
+    .equip-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* chamado destaque */
+  .chamado-wrap {
+    position: relative;
+  }
+  .chamado-wrap input {
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    letter-spacing: 1px;
+  }
+
+  @media (max-width: 560px) {
+    .grid-2, .toggle-group { grid-template-columns: 1fr; }
+    body { padding: 20px 16px 60px; }
+    .card { padding: 20px; }
+  }
+
+  /* Assinaturas */
+  .sig-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .sig-box {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .sig-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--text2);
+  }
+
+  .sig-canvas-wrap {
+    position: relative;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    background: #fff;
+    overflow: hidden;
+    cursor: crosshair;
+    transition: border-color 0.18s;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .sig-canvas-wrap:hover,
+  .sig-canvas-wrap.active {
+    border-color: var(--accent);
+  }
+
+  .sig-canvas {
+    display: block;
+    width: 100%;
+    height: 130px;
+  }
+
+  .sig-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #bbb;
+    font-size: 13px;
+    pointer-events: none !important;
+    touch-action: none;
+    transition: opacity 0.2s;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .sig-placeholder.hidden { opacity: 0; }
+
+  .sig-actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .sig-clear {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 11px;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .sig-clear:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  @media (max-width: 560px) {
+    .sig-grid { grid-template-columns: 1fr; }
+  }
+
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top" style="justify-content: space-between;">
+    <div style="display:flex; align-items:center; gap:14px;">
+      <div class="logo">📋</div>
+      <h1>Gerador de Termos</h1>
+    </div>
+    <button onclick="abrirPainelPendentes()" style="background:#6b46c1; color:#fff; border:none; border-radius:8px; padding:9px 16px; font-size:13px; font-weight:500; font-family:inherit; cursor:pointer; white-space:nowrap;">
+      📋 Termos Pendentes
+    </button>
+  </div>
+  <p class="subtitle">Preencha os dados e gere o PDF para assinatura digital</p>
+</div>
+
+<!-- TIPO -->
+<div class="card">
+  <div class="card-title">Tipo de Termo</div>
+  <div class="toggle-group">
+    <button class="toggle-btn active" onclick="setTipo('responsabilidade')">
+      <span class="btn-label">📦 Responsabilidade</span>
+      <span class="btn-desc">Entrega de equipamento ao colaborador</span>
+    </button>
+    <button class="toggle-btn" onclick="setTipo('devolucao')">
+      <span class="btn-label">🔄 Devolução</span>
+      <span class="btn-desc">Retorno do equipamento à empresa</span>
+    </button>
+    <button class="toggle-btn" onclick="setTipo('troca')">
+      <span class="btn-label">🔁 Troca</span>
+      <span class="btn-desc">Substituição de equipamento</span>
+    </button>
+  </div>
+</div>
+
+<!-- EMPRESA + SEDE -->
+<div class="card">
+  <div class="card-title">Empresa e Sede</div>
+
+  <!-- Empresa de Vínculo -->
+  <div class="field">
+    <label>Empresa de Vínculo</label>
+    <div class="vinculo-group">
+      <button class="vinculo-btn active" id="vinculo-fleury" onclick="setVinculo('fleury')">Fleury</button>
+      <button class="vinculo-btn" id="vinculo-pardini" onclick="setVinculo('pardini')">Pardini</button>
+    </div>
+  </div>
+
+  <div class="section-sep"></div>
+
+  <!-- Marca de Atuação -->
+  <div class="field">
+    <label>Marca de Atuação do Colaborador</label>
+  </div>
+  <div class="empresa-dropdown-wrap" id="empresa-dropdown-wrap">
+    <div class="empresa-display" id="empresa-display" onclick="toggleEmpresaDropdown()">
+      <span id="empresa-display-text">Fleury</span>
+      <span class="empresa-arrow" id="empresa-arrow">▾</span>
+    </div>
+    <div class="empresa-list-wrap" id="empresa-list-wrap">
+      <div class="empresa-search-wrap">
+        <input type="text" id="empresa-search" placeholder="Buscar marca..." oninput="filtrarEmpresas()" autocomplete="off" />
+      </div>
+      <ul class="empresa-list" id="empresa-list"></ul>
+    </div>
+  </div>
+
+  <div class="section-sep"></div>
+
+  <!-- Unidade -->
+  <div class="field">
+    <label>Unidade / Loja / Local de Trabalho do Colaborador</label>
+    <input type="text" id="unidade" placeholder="Ex: Unidade Vila Mariana" />
+  </div>
+</div>
+
+<!-- DADOS BÁSICOS -->
+<div class="card">
+  <div class="card-title">Dados do Chamado</div>
+  <div class="grid-1">
+    <div class="field chamado-wrap">
+      <label>Nº Chamado</label>
+      <input type="text" id="chamado" placeholder="Ex: CHG-2024-00451" />
+    </div>
+  </div>
+
+  <div class="section-sep"></div>
+  <div class="card-title">Dados do Colaborador</div>
+
+  <div class="grid-2">
+    <div class="field">
+      <label>Nome</label>
+      <input type="text" id="nome" placeholder="Nome completo" />
+    </div>
+    <div class="field">
+      <label>Matrícula</label>
+      <input type="text" id="matricula" placeholder="000000" />
+    </div>
+    <div class="field">
+      <label id="label-email-colab">E-mail</label>
+      <input type="email" id="email" placeholder="colaborador@grupoFleury.com.br" />
+    </div>
+    <div class="field">
+      <label>Telefone</label>
+      <input type="tel" id="telefone" placeholder="(11) 99999-9999" />
+    </div>
+  </div>
+
+  <div class="section-sep"></div>
+  <div class="card-title">Dados da Área</div>
+
+  <div class="grid-2">
+    <div class="field">
+      <label>Departamento</label>
+      <input type="text" id="departamento" placeholder="Tecnologia da Informação" />
+    </div>
+    <div class="field">
+      <label>Cargo</label>
+      <input type="text" id="cargo" placeholder="Analista de TI" />
+    </div>
+    <div class="field" style="grid-column: 1 / -1;">
+      <label>Centro de Custo</label>
+      <input type="text" id="centrocusto" placeholder="Ex: 1050" />
+    </div>
+    <div class="field" id="field-nome-gestor">
+      <label>Nome do Gestor</label>
+      <input type="text" id="nome-gestor" placeholder="Nome completo do gestor" />
+    </div>
+    <div class="field" id="field-email-gestor-area">
+      <label>E-mail do Gestor da Área</label>
+      <input type="email" id="email-gestor" placeholder="gestor@grupoFleury.com.br" />
+    </div>
+  </div>
+</div>
+
+<!-- EQUIPAMENTO -->
+<div class="card">
+  <div class="card-title" id="equip-card-title">Identificação do Equipamento</div>
+
+  <!-- Seletor de tipo de equipamento -->
+  <div class="equip-selector" id="equip-selector">
+    <label>Tipo de Equipamento</label>
+    <div class="equip-grid" id="equip-grid">
+      <button class="equip-btn active" onclick="setEquipamento('Notebook')" data-equip="Notebook">💻 Notebook</button>
+      <button class="equip-btn" onclick="setEquipamento('Macbook')" data-equip="Macbook">🍎 Macbook</button>
+      <button class="equip-btn" onclick="setEquipamento('Tablet')" data-equip="Tablet">📱 Tablet</button>
+      <button class="equip-btn" onclick="setEquipamento('Smartphone')" data-equip="Smartphone">📲 Smartphone</button>
+      <button class="equip-btn" onclick="setEquipamento('iPhone')" data-equip="iPhone">📱 iPhone</button>
+    </div>
+  </div>
+
+  <div class="section-sep"></div>
+
+  <!-- Bloco: Equipamento Recebido (visível na Troca) -->
+  <div id="bloco-recebido-label" style="display:none;" class="equip-bloco-titulo equip-bloco-azul">📦 Entregue ao Colaborador</div>
+  <div class="grid-2">
+    <div class="field">
+      <label id="label-descricao-rec">Descrição</label>
+      <input type="text" id="descricao" value="Notebook" readonly style="background:#f0f0f0; cursor:default;" />
+    </div>
+    <div class="field">
+      <label>Marca / Modelo</label>
+      <input type="text" id="modelo" placeholder="Dell Latitude 5540" />
+    </div>
+    <div class="field">
+      <label>Número de Série</label>
+      <input type="text" id="serie" placeholder="SN-XXXXXXXXX" />
+    </div>
+    <div class="field">
+      <label id="label-patrimonio">Patrimônio</label>
+      <input type="text" id="patrimonio" placeholder="PAT-00000" />
+    </div>
+    <div class="field" id="field-linha" style="grid-column: 1 / -1; display:none;">
+      <label>Linha Telefônica</label>
+      <input type="text" id="linha-telefonica" placeholder="Ex: (11) 99999-9999" />
+    </div>
+    <div class="field" style="grid-column: 1 / -1;">
+      <label>Acessórios</label>
+      <input type="text" id="acessorios" placeholder="Carregador, mouse, bag" />
+    </div>
+  </div>
+
+  <!-- Bloco: Equipamento Devolvido (só na Troca) -->
+  <div id="bloco-devolvido" style="display:none;">
+    <div class="section-sep"></div>
+    <div class="equip-bloco-titulo">🔙 Devolvido pelo Colaborador</div>
+    <div class="grid-2">
+      <div class="field">
+        <label>Descrição</label>
+        <input type="text" id="dev-descricao" value="Notebook" readonly style="background:#f0f0f0; cursor:default;" />
+      </div>
+      <div class="field">
+        <label>Marca / Modelo</label>
+        <input type="text" id="dev-modelo" placeholder="Dell Latitude 5540" />
+      </div>
+      <div class="field">
+        <label>Número de Série</label>
+        <input type="text" id="dev-serie" placeholder="SN-XXXXXXXXX" />
+      </div>
+      <div class="field">
+        <label id="label-dev-patrimonio">Patrimônio</label>
+        <input type="text" id="dev-patrimonio" placeholder="PAT-00000" />
+      </div>
+      <div class="field" id="field-dev-linha" style="grid-column: 1 / -1; display:none;">
+        <label>Linha Telefônica</label>
+        <input type="text" id="dev-linha-telefonica" placeholder="Ex: (11) 99999-9999" />
+      </div>
+      <div class="field" style="grid-column: 1 / -1;">
+        <label>Acessórios</label>
+        <input type="text" id="dev-acessorios" placeholder="Carregador, mouse, bag" />
+      </div>
+    </div>
+    <!-- Seletor de tipo para equipamento devolvido -->
+    <div class="equip-selector" style="margin-top:10px;">
+      <label>Tipo do Equipamento Devolvido</label>
+      <div class="equip-grid" id="equip-grid-dev">
+        <button class="equip-btn active" onclick="setEquipamentoDev('Notebook')" data-equip="Notebook">💻 Notebook</button>
+        <button class="equip-btn" onclick="setEquipamentoDev('Macbook')" data-equip="Macbook">🍎 Macbook</button>
+        <button class="equip-btn" onclick="setEquipamentoDev('Tablet')" data-equip="Tablet">📱 Tablet</button>
+        <button class="equip-btn" onclick="setEquipamentoDev('Smartphone')" data-equip="Smartphone">📲 Smartphone</button>
+        <button class="equip-btn" onclick="setEquipamentoDev('iPhone')" data-equip="iPhone">📱 iPhone</button>
+      </div>
+    </div>
+
+    <!-- Condição no ato da devolução — dentro do bloco Troca -->
+    <div class="section-sep" style="margin-top:12px;"></div>
+    <div class="card-title" style="font-size:11px; margin-bottom:8px;">Condição no Ato da Devolução</div>
+    <div class="check-row">
+      <label class="check-option">
+        <input type="radio" name="condicao-troca" value="perfeito" checked onchange="toggleAvariasTroca()" />
+        Em perfeito estado de funcionamento
+      </label>
+      <label class="check-option">
+        <input type="radio" name="condicao-troca" value="avarias" onchange="toggleAvariasTroca()" />
+        Com avarias
+      </label>
+    </div>
+    <div class="avarias-section" id="avarias-troca-section">
+      <div class="field">
+        <label>Descrição das Avarias</label>
+        <textarea id="avarias-troca" placeholder="Descreva as avarias identificadas..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Condição — só aparece no termo de devolução -->
+  <div id="condicao-section" style="display:none;">
+    <div class="section-sep"></div>
+    <div class="card-title">Condição no Ato da Devolução</div>
+    <div class="check-row">
+      <label class="check-option" id="lbl-perfeito">
+        <input type="radio" name="condicao" value="perfeito" checked onchange="toggleAvarias()" />
+        Em perfeito estado de funcionamento
+      </label>
+      <label class="check-option" id="lbl-avarias">
+        <input type="radio" name="condicao" value="avarias" onchange="toggleAvarias()" />
+        Com avarias
+      </label>
+    </div>
+    <div class="avarias-section" id="avarias-section">
+      <div class="field">
+        <label>Descrição das Avarias</label>
+        <textarea id="avarias" placeholder="Descreva as avarias identificadas..."></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CAIXA DE LEITURA -->
+<div class="card" id="card-leitura" style="display:none;">
+  <div class="card-title">📄 Leia antes de assinar</div>
+  <div class="leitura-box" id="leitura-box"></div>
+</div>
+
+<!-- ASSINATURAS -->
+<div class="card">
+  <div class="card-title">Assinaturas</div>
+  <div class="sig-grid">
+
+    <div class="sig-box">
+      <div class="sig-label">Assinatura do Colaborador</div>
+      <div class="sig-canvas-wrap" id="wrap-colaborador">
+        <canvas id="sig-colaborador" class="sig-canvas"></canvas>
+        <div class="sig-placeholder">✍ Assine aqui com o dedo ou mouse</div>
+      </div>
+      <div class="sig-actions">
+        <button class="sig-clear" onclick="clearSig('colaborador')">Limpar</button>
+      </div>
+
+    </div>
+
+    <div class="sig-box">
+      <div class="sig-label" id="label-ti">Responsável pela Entrega (TI)</div>
+      <div class="sig-canvas-wrap" id="wrap-ti">
+        <canvas id="sig-ti" class="sig-canvas"></canvas>
+        <div class="sig-placeholder">✍ Assine aqui com o dedo ou mouse</div>
+      </div>
+      <div class="sig-actions">
+        <button class="sig-clear" onclick="clearSig('ti')">Limpar</button>
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label id="label-nome-ti">Nome do Responsável (TI)</label>
+        <input type="text" id="nome-ti" placeholder="Nome completo" />
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- BOTÕES -->
+<div style="display:flex; gap:12px; flex-wrap:wrap;">
+  <button class="btn-gerar" id="btn-gerar" onclick="gerarPDF()" style="flex:1; min-width:200px;">
+    ⬇ Gerar PDF com Assinaturas
+  </button>
+  <button class="btn-gerar" id="btn-onedrive" onclick="gerarESalvarOneDrive()" style="flex:1; min-width:200px; background:#0078d4;">
+    ☁ Gerar PDF e Salvar no OneDrive
+  </button>
+  <button class="btn-gerar" id="btn-link-remoto" onclick="gerarLinkRemoto()" style="flex:1; min-width:200px; background:#6b46c1;">
+    🔗 Gerar Link de Assinatura Remota
+  </button>
+</div>
+
+<div class="toast" id="toast">✓ PDF gerado com sucesso!</div>
+<div class="toast" id="toast-onedrive" style="background:#0078d4;">☁ PDF salvo no OneDrive com sucesso!</div>
+<div class="toast" id="toast-onedrive-erro" style="background:#cc0000;">✗ Erro ao salvar no OneDrive. Tente novamente.</div>
+<div class="toast" id="toast-link-erro" style="background:#cc0000;">✗ Erro ao gerar link remoto. Tente novamente.</div>
+
+<!-- MODAL: link gerado -->
+<div id="modal-link-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:999; align-items:center; justify-content:center; padding:20px;">
+  <div style="background:#fff; border-radius:14px; padding:28px; max-width:480px; width:100%;">
+    <div style="font-weight:600; font-size:16px; margin-bottom:6px;">🔗 Link de assinatura gerado</div>
+    <div style="color:#555; font-size:13px; margin-bottom:16px;">Envie este link para o colaborador assinar remotamente. Válido por 48 horas.</div>
+    <div style="display:flex; gap:8px; margin-bottom:16px;">
+      <input type="text" id="link-remoto-output" readonly style="flex:1; padding:10px 12px; border:1px solid #e0e0e0; border-radius:8px; font-size:12px; font-family:'DM Mono',monospace;" />
+      <button onclick="copiarLinkRemoto()" style="padding:10px 14px; border:none; border-radius:8px; background:#6b46c1; color:#fff; font-weight:500; cursor:pointer;">Copiar</button>
+    </div>
+    <button onclick="document.getElementById('modal-link-overlay').style.display='none'" style="width:100%; padding:10px; border:1px solid #e0e0e0; border-radius:8px; background:#fff; cursor:pointer;">Fechar</button>
+  </div>
+</div>
+
+<script>
+const { jsPDF } = window.jspdf;
+
+// Normaliza caracteres especiais para compatibilidade com jsPDF
+function s(str) {
+  if (str === null || str === undefined) return '';
+  if (Array.isArray(str)) return str.map(s);
+  str = String(str);
+  return str
+    .replace(/[áàãâä]/g, 'a').replace(/[ÁÀÃÂÄ]/g, 'A')
+    .replace(/[éèêë]/g,  'e').replace(/[ÉÈÊË]/g,  'E')
+    .replace(/[íìîï]/g,  'i').replace(/[ÍÌÎÏ]/g,  'I')
+    .replace(/[óòõôö]/g, 'o').replace(/[ÓÒÕÔÖ]/g, 'O')
+    .replace(/[úùûü]/g,  'u').replace(/[ÚÙÛÜ]/g,  'U')
+    .replace(/[ç]/g, 'c').replace(/[Ç]/g, 'C')
+    .replace(/[ñ]/g, 'n').replace(/[Ñ]/g, 'N')
+    .replace(/[☑]/g, '[X]').replace(/[☐]/g, '[ ]');
+}
+
+
+// ─── SIGNATURE PADS ──────────────────────────────────────────
+const sigState = { colaborador: false, ti: false };
+const sigCtx   = {};
+
+function initSigPad(name) {
+  const canvas = document.getElementById('sig-' + name);
+  const wrap   = document.getElementById('wrap-' + name);
+  const ph     = wrap.querySelector('.sig-placeholder');
+
+  // Set canvas internal size to match CSS display size
+  function fitCanvas() {
+    const w = wrap.offsetWidth  || 300;
+    const h = 130;
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width  = w;
+      canvas.height = h;
+    }
+    const ctx = canvas.getContext('2d');
+    ctx.strokeStyle = '#111111';
+    ctx.fillStyle   = '#111111';
+    ctx.lineWidth   = 2.5;
+    ctx.lineCap     = 'round';
+    ctx.lineJoin    = 'round';
+    sigCtx[name] = ctx;
+  }
+
+  fitCanvas();
+  window.addEventListener('resize', () => {
+    if (!sigState[name]) fitCanvas();
+  });
+
+  let drawing = false;
+  let lx = 0, ly = 0;
+
+  function pos(e) {
+    const r = canvas.getBoundingClientRect();
+    const scaleX = canvas.width  / r.width;
+    const scaleY = canvas.height / r.height;
+    let cx, cy;
+    if (e.changedTouches && e.changedTouches.length) {
+      cx = e.changedTouches[0].clientX;
+      cy = e.changedTouches[0].clientY;
+    } else if (e.touches && e.touches.length) {
+      cx = e.touches[0].clientX;
+      cy = e.touches[0].clientY;
+    } else {
+      cx = e.clientX;
+      cy = e.clientY;
+    }
+    return { x: (cx - r.left) * scaleX, y: (cy - r.top) * scaleY };
+  }
+
+  function onStart(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    fitCanvas();
+    drawing = true;
+    const p = pos(e);
+    lx = p.x; ly = p.y;
+    sigCtx[name].beginPath();
+    sigCtx[name].moveTo(lx, ly);
+    // draw a dot for single tap
+    sigCtx[name].arc(lx, ly, 1.2, 0, Math.PI * 2);
+    sigCtx[name].fill();
+    sigCtx[name].beginPath();
+    sigCtx[name].moveTo(lx, ly);
+    wrap.classList.add('active');
+  }
+
+  function onMove(e) {
+    if (!drawing) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const p = pos(e);
+    sigCtx[name].lineTo(p.x, p.y);
+    sigCtx[name].stroke();
+    sigCtx[name].beginPath();
+    sigCtx[name].moveTo(p.x, p.y);
+    lx = p.x; ly = p.y;
+    if (!sigState[name]) {
+      sigState[name] = true;
+      ph.classList.add('hidden');
+    }
+  }
+
+  function onStop(e) {
+    if (!drawing) return;
+    drawing = false;
+    sigCtx[name].beginPath();
+    wrap.classList.remove('active');
+  }
+
+  // Mouse
+  canvas.addEventListener('mousedown',  onStart, false);
+  canvas.addEventListener('mousemove',  onMove,  false);
+  canvas.addEventListener('mouseup',    onStop,  false);
+  canvas.addEventListener('mouseleave', onStop,  false);
+
+  // Touch
+  canvas.addEventListener('touchstart', onStart, { passive: false });
+  canvas.addEventListener('touchmove',  onMove,  { passive: false });
+  canvas.addEventListener('touchend',   onStop,  { passive: false });
+  canvas.addEventListener('touchcancel',onStop,  { passive: false });
+}
+
+function clearSig(name) {
+  const canvas = document.getElementById('sig-' + name);
+  const wrap   = document.getElementById('wrap-' + name);
+  if (sigCtx[name]) sigCtx[name].clearRect(0, 0, canvas.width, canvas.height);
+  sigState[name] = false;
+  wrap.querySelector('.sig-placeholder').classList.remove('hidden');
+  wrap.classList.remove('active');
+}
+
+function getSigDataURL(name) {
+  if (!sigState[name]) return null;
+  return document.getElementById('sig-' + name).toDataURL('image/png');
+}
+
+function updateLabelTI() {
+  const lbl = document.getElementById('label-ti');
+  const lblNome = document.getElementById('label-nome-ti');
+  const t = estado.tipo;
+  const labelSig  = t === 'responsabilidade' ? 'Responsável pela Entrega (TI)'
+                  : t === 'troca'            ? 'Responsável pela Troca (TI)'
+                  :                            'Responsável pelo Recebimento (TI)';
+  const labelNome = t === 'responsabilidade' ? 'Nome do Responsável pela Entrega (TI)'
+                  : t === 'troca'            ? 'Nome do Responsável pela Troca (TI)'
+                  :                            'Nome do Responsável pelo Recebimento (TI)';
+  if (lbl) lbl.textContent = labelSig;
+  if (lblNome) lblNome.textContent = labelNome;
+}
+
+// Init after layout is painted
+requestAnimationFrame(() => {
+  setTimeout(() => {
+    initSigPad('colaborador');
+    initSigPad('ti');
+    buildEmpresaList();
+    atualizarCaixaLeitura();
+  }, 100);
+});
+
+
+let estado = {
+  tipo: 'responsabilidade',
+  empresa: 'Fleury',
+  unidade: ''
+};
+
+function setTipo(t) {
+  estado.tipo = t;
+  const ordem = ['responsabilidade','devolucao','troca'];
+  document.querySelectorAll('.toggle-btn').forEach((b,i) => b.classList.toggle('active', i === ordem.indexOf(t)));
+  document.getElementById('condicao-section').style.display = t === 'devolucao' ? 'block' : 'none';
+
+  // Troca: mostrar bloco devolvido e labels
+  const isTroca = t === 'troca';
+  document.getElementById('bloco-devolvido').style.display       = isTroca ? 'block' : 'none';
+  document.getElementById('bloco-recebido-label').style.display  = isTroca ? 'block' : 'none';
+  document.getElementById('equip-card-title').textContent        = isTroca ? 'Equipamentos' : 'Identificação do Equipamento';
+  document.getElementById('label-descricao-rec').textContent     = isTroca ? 'Descrição (Recebido)' : 'Descrição';
+
+  // Campos nome e e-mail do gestor: só na Devolução (em Dados da Área)
+  // Campos de gestor visíveis em todos os tipos de termo
+
+  // Label e placeholder do e-mail do colaborador
+  const labelEmailColab = document.getElementById('label-email-colab');
+  const inputEmailColab = document.getElementById('email');
+  if (labelEmailColab && inputEmailColab) {
+    if (t === 'devolucao') {
+      labelEmailColab.textContent = 'E-mail Pessoal';
+      inputEmailColab.placeholder = 'email@pessoal.com.br';
+    } else {
+      labelEmailColab.textContent = 'E-mail';
+      inputEmailColab.placeholder = 'colaborador@grupoFleury.com.br';
+    }
+  }
+
+  updateLabelTI();
+  atualizarCaixaLeitura();
+}
+
+function setEquipamentoDev(tipo) {
+  document.querySelectorAll('#equip-grid-dev .equip-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.equip === tipo);
+  });
+  document.getElementById('dev-descricao').value = tipo;
+
+  const usaImei = ['Smartphone', 'iPhone', 'Tablet'].includes(tipo);
+  document.getElementById('label-dev-patrimonio').textContent = usaImei ? 'IMEI' : 'Patrimônio';
+  document.getElementById('dev-patrimonio').placeholder = usaImei ? '000000000000000' : 'PAT-00000';
+  document.getElementById('dev-patrimonio').value = '';
+
+  const fieldLinha = document.getElementById('field-dev-linha');
+  if (fieldLinha) {
+    fieldLinha.style.display = usaImei ? 'block' : 'none';
+    if (!usaImei) document.getElementById('dev-linha-telefonica').value = '';
+  }
+}
+
+const MARCAS_FLEURY = [
+  'Amais DF','Amais PE','Amais PI','Amais PR','Amais RS','Amais SP',
+  'Bioclinico','Confiance','CPC','CPMA','Dalmo Oliveira','Diagmax',
+  'Felippe Mattoso','Fleury','Helion Povoa','Inlab','IR',
+  'Labs Amais','Lafe','Lafe Hub','Maiolino','Marcelo Magalhaes',
+  'Novamed PR','Novamed RJ','Novamed RS','Novamend',
+  'Pretti','Santecorp','São Lucas','Sedes ADM',
+  'Serdil','Sommos DNA'
+];
+
+const MARCAS_PARDINI = [
+  'Apoio Operacional',
+  'Depósito de Bens',
+  'Ger. CRC',
+  'Gestão de Estoque Almoxarifado',
+  'Hermes Pardini (HP)',
+  'Hermes Pardini SP',
+  'Pardini',
+  'Pardini Express',
+  'Sede Administrativa BH',
+  'Alipio de Melo',
+  'Alphaville',
+  'Barreiro',
+  'Barroca',
+  'Belvedere',
+  'Bernardo Monteiro',
+  'Betania',
+  'Betim',
+  'Betim II',
+  'Caete',
+  'Caicara',
+  'Carijos',
+  'Castelo',
+  'Centro',
+  'Ceu Azul',
+  'Cidade Jardim',
+  'Cidade Nova',
+  'Contagem',
+  'Contorno',
+  'Coracao Eucaristico',
+  'Eldorado I',
+  'Eldorado II',
+  'Floramar',
+  'Grajau',
+  'Guarani',
+  'Ibirite',
+  'Industrial',
+  'Ipiranga',
+  'Jardim Canada',
+  'Justinopolis',
+  'Lagoa Santa',
+  'Lagoa Santa II',
+  'Lagoinha',
+  'Mangabeiras',
+  'Milionarios',
+  'Niquelina',
+  'Nova Lima',
+  'Ouro Preto',
+  'Padre Eustaquio',
+  'Palmares',
+  'Pampulha',
+  'Pedro II',
+  'Pedro Leopoldo',
+  'Petrolandia',
+  'Pio XII',
+  'Planalto',
+  'Ressaca',
+  'Ribeirao Das Neves',
+  'Sabara',
+  'Santa Amelia',
+  'Santa Ines',
+  'Santa Luzia',
+  'Santa Monica',
+  'Santo Agostinho',
+  'Sao Benedito',
+  'Sao Paulo',
+  'Savassi',
+  'Sete Lagoas',
+  'Sete Lagoas II',
+  'Tirol',
+  'Venda Nova',
+  'Vespasiano',
+];
+
+let vinculoAtual = 'fleury';
+
+function setVinculo(v) {
+  vinculoAtual = v;
+  document.getElementById('vinculo-fleury').classList.toggle('active', v === 'fleury');
+  document.getElementById('vinculo-pardini').classList.toggle('active', v === 'pardini');
+  // Resetar seleção de marca
+  const primeiraLista = v === 'pardini' ? MARCAS_PARDINI : MARCAS_FLEURY;
+  const primeiraMarca = primeiraLista[0];
+  estado.empresa = primeiraMarca;
+  document.getElementById('empresa-display-text').textContent = primeiraMarca;
+  buildEmpresaList();
+}
+
+function buildEmpresaList() {
+  const lista = vinculoAtual === 'pardini' ? MARCAS_PARDINI : MARCAS_FLEURY;
+  const ul = document.getElementById('empresa-list');
+  ul.innerHTML = '';
+  lista.forEach(nome => {
+    const li = document.createElement('li');
+    li.textContent = nome;
+    li.dataset.nome = nome;
+    if (nome === estado.empresa) li.classList.add('active');
+    li.onclick = () => selectEmpresa(nome);
+    ul.appendChild(li);
+  });
+}
+
+function toggleEmpresaDropdown() {
+  const wrap = document.getElementById('empresa-list-wrap');
+  const display = document.getElementById('empresa-display');
+  const arrow = document.getElementById('empresa-arrow');
+  const search = document.getElementById('empresa-search');
+  const isOpen = wrap.classList.contains('open');
+  if (isOpen) {
+    wrap.classList.remove('open');
+    display.classList.remove('open');
+    arrow.classList.remove('open');
+  } else {
+    wrap.classList.add('open');
+    display.classList.add('open');
+    arrow.classList.add('open');
+    search.value = '';
+    filtrarEmpresas();
+    search.focus();
+  }
+}
+
+function selectEmpresa(nome) {
+  estado.empresa = nome;
+  document.getElementById('empresa-display-text').textContent = nome;
+  document.querySelectorAll('.empresa-list li').forEach(li => {
+    li.classList.toggle('active', li.dataset.nome === nome);
+  });
+  // fechar dropdown
+  document.getElementById('empresa-list-wrap').classList.remove('open');
+  document.getElementById('empresa-display').classList.remove('open');
+  document.getElementById('empresa-arrow').classList.remove('open');
+}
+
+function filtrarEmpresas() {
+  const q = document.getElementById('empresa-search').value.toLowerCase();
+  document.querySelectorAll('.empresa-list li').forEach(li => {
+    li.classList.toggle('hidden', !li.textContent.toLowerCase().includes(q));
+  });
+}
+
+function setEmpresa(nome) { selectEmpresa(nome); }
+
+// Fechar ao clicar fora
+document.addEventListener('click', function(e) {
+  const wrap = document.getElementById('empresa-dropdown-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('empresa-list-wrap').classList.remove('open');
+    document.getElementById('empresa-display').classList.remove('open');
+    document.getElementById('empresa-arrow').classList.remove('open');
+  }
+});
+
+// ─── CAIXA DE LEITURA ────────────────────────────────────────
+const TEXTOS_RESP_NOTEBOOK = `Declaro, para os devidos fins, que recebi os equipamentos descritos neste documento, em perfeitas condições de uso e funcionamento, juntamente com todos os seus acessórios e componentes.
+
+Comprometo-me a zelar pela guarda, conservação e correto uso do(s) equipamento(s), assumindo integral responsabilidade pela sua utilização, bem como pela sua devolução nas mesmas condições em que foram recebidos, incluindo todos os componentes, sempre que solicitado.
+
+Obrigações:
+
+• Utilizar o equipamento exclusivamente para fins profissionais, observando as políticas internas;
+• Empregar todo o cuidado e diligência necessários à preservação da integridade física e lógica do equipamento;
+• É expressamente proibida qualquer modificação física no equipamento, incluindo aplicação de adesivos ou etiquetas;
+• Registrar boletim de ocorrência em caso de perda, roubo ou furto e informar à área de TI via chamado;
+• Não emprestar, ceder ou permitir o uso do equipamento por terceiros sem autorização formal;
+• Responsabilizar-me por custos de reparo decorrentes de danos por uso inadequado;
+• Devolver o equipamento com todos os acessórios ao técnico de TI ou gestor imediato quando solicitado;
+• Autorizar o recolhimento do equipamento em caso de descumprimento das políticas internas;
+• Autorizar o desconto em folha de pagamento do valor correspondente ao equipamento na hipótese de não devolução.`;
+
+const TEXTOS_RESP_MOBILE = `Declaro que recebi o aparelho celular descrito neste documento, em perfeitas condições de uso, juntamente com seus acessórios e linha telefônica vinculada (quando aplicável).
+
+Comprometo-me a utilizar o dispositivo de forma responsável e em conformidade com as políticas corporativas, assumindo plena responsabilidade por sua guarda, uso e devolução.
+
+Obrigações:
+
+• Utilizar o aparelho de forma adequada, zelando por sua integridade e conservação;
+• Não emprestar, ceder ou permitir o uso do dispositivo a terceiros sem autorização;
+• É expressamente proibida qualquer modificação física, incluindo aplicação de adesivos ou etiquetas;
+• Registrar boletim de ocorrência em caso de roubo ou furto e solicitar à TI o bloqueio do aparelho e/ou linha via chamado;
+• Assumir custos de reparo em caso de danos físicos por uso inadequado;
+• Devolver o aparelho formatado e desbloqueado com todos os acessórios ao técnico de TI ou gestor imediato;
+• Autorizar o desconto em folha de pagamento do valor correspondente em caso de não devolução;
+• Autorizar o recolhimento do dispositivo em caso de não conformidade com as políticas corporativas.`;
+
+const TEXTO_DEV = `O colaborador declara que está devolvendo o equipamento recebido anteriormente, conforme termo de responsabilidade original.
+
+A empresa declara que receberá o equipamento nas condições descritas neste documento. Eventuais danos poderão ser avaliados conforme políticas internas da empresa.
+
+Ao assinar este documento, o colaborador confirma que está realizando a devolução voluntária e em conformidade com as normas corporativas, estando ciente de que a conferência final do estado do equipamento será realizada pela equipe de TI.`;
+
+const TEXTO_TROCA_BASE = (equips) => `Ao receber o ${equips}, o colaborador compromete-se a observar rigorosamente as disposições a seguir:
+
+1. Conservação e uso adequado — Empregar toda a diligência necessária à correta conservação e operação dos equipamentos.
+2. Vedação à transferência a terceiros — Não emprestar, ceder ou disponibilizar os equipamentos a terceiros sem autorização expressa.
+3. Comunicação imediata à TI — Comunicar imediatamente qualquer ocorrência de perda, roubo, furto, extravio ou dano.
+4. Registro de Boletim de Ocorrência — Em caso de roubo ou furto, registrar B.O. e encaminhar cópia à TI.
+5. Medidas de segurança — Informar a TI para adoção de bloqueio, rastreamento e remoção de acessos corporativos.
+6. Responsabilidade por danos — Responsabilizar-se pelos custos de reparo por mau uso ou negligência.
+7. Devolução em perfeitas condições — Devolver o equipamento com todos os acessórios quando solicitado.
+8. Desbloqueio antes da devolução — Realizar o desbloqueio e remoção de contas pessoais previamente à devolução.
+9. Autorização para desconto — Autorizar desconto em folha pelo valor dos equipamentos não devolvidos ou danificados por negligência.
+10. Recolhimento em caso de descumprimento — Autorizar o recolhimento em caso de descumprimento das políticas.
+11. Manutenção da segurança — Manter os equipamentos atualizados e em conformidade com as políticas de segurança.
+12. Sigilo e integridade — Zelar pela confidencialidade das informações e não instalar softwares não autorizados.
+
+Declaração final — O colaborador declara que, nesta data, está devolvendo o(s) ativo(s) anteriormente sob sua responsabilidade e recebendo novo(s) ativo(s), assumindo integralmente a guarda e a responsabilidade pelo(s) equipamento(s) ora entregue(s).`;
+
+function atualizarCaixaLeitura() {
+  const t = estado.tipo;
+  const box = document.getElementById('leitura-box');
+  const card = document.getElementById('card-leitura');
+  if (!box || !card) return;
+
+  let texto = '';
+  let azul = false;
+
+  if (t === 'responsabilidade') {
+    const equip = document.getElementById('descricao')?.value || 'Notebook';
+    const isMob = ['Smartphone', 'iPhone'].includes(equip);
+    texto = isMob ? TEXTOS_RESP_MOBILE : TEXTOS_RESP_NOTEBOOK;
+  } else if (t === 'devolucao') {
+    texto = TEXTO_DEV;
+  } else if (t === 'troca') {
+    const equipRec = document.getElementById('descricao')?.value || '';
+    const equipDev = document.getElementById('dev-descricao')?.value || '';
+    const equips = [...new Set([equipDev, equipRec].filter(Boolean))];
+    const equipsStr = equips.length > 1
+      ? equips.slice(0, -1).join(', ') + ' e ' + equips.slice(-1)
+      : equips[0] || 'equipamento';
+    texto = TEXTO_TROCA_BASE(equipsStr);
+    azul = true;
+  }
+
+  box.textContent = texto;
+  box.classList.toggle('azul', azul);
+  card.style.display = texto ? 'block' : 'none';
+}
+
+function toggleAvarias() {
+  const val = document.querySelector('input[name="condicao"]:checked').value;
+  const sec = document.getElementById('avarias-section');
+  sec.classList.toggle('visible', val === 'avarias');
+}
+
+function toggleAvariasTroca() {
+  const val = document.querySelector('input[name="condicao-troca"]:checked').value;
+  const sec = document.getElementById('avarias-troca-section');
+  sec.classList.toggle('visible', val === 'avarias');
+}
+
+const IMEI_EQUIPS = ['Smartphone', 'iPhone', 'Tablet'];
+
+function setEquipamento(tipo) {
+  document.querySelectorAll('.equip-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.equip === tipo);
+  });
+
+  document.getElementById('descricao').value = tipo;
+
+  const usaImei = IMEI_EQUIPS.includes(tipo);
+  const labelPatrimonio = document.getElementById('label-patrimonio');
+  const inputPatrimonio = document.getElementById('patrimonio');
+
+  if (usaImei) {
+    labelPatrimonio.textContent = 'IMEI';
+    inputPatrimonio.placeholder = '000000000000000';
+  } else {
+    labelPatrimonio.textContent = 'Patrimônio';
+    inputPatrimonio.placeholder = 'PAT-00000';
+  }
+
+  inputPatrimonio.value = '';
+
+  // Mostrar campo Linha Telefônica apenas para mobile
+  const fieldLinha = document.getElementById('field-linha');
+  if (fieldLinha) {
+    fieldLinha.style.display = usaImei ? 'block' : 'none';
+    if (!usaImei) document.getElementById('linha-telefonica').value = '';
+  }
+
+  atualizarCaixaLeitura();
+}
+
+function v(id) {
+  return (document.getElementById(id)?.value || '').trim();
+}
+
+// ─── SUPABASE: assinatura remota ──────────────────────────────
+const LOGO_FLEURY_B64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAACfCAYAAACP12FFAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAFAGSURBVHhe7d13eBzF+cDx7+zuFXXLcq+AjSsGYmwMBptiOoQeQu+9hw6hJ4FAgAA/SiCU0EwnEHpvxgXTDDa49yZLttWu7u7M74+9k6WzTs13smTP53n2ke72yt7e3s47704RSimFpmmapmlbFSP1Dk3TNE3Ttnw6ANA0TdO0rZAOADRN0zRtK6QDAE3TNE3bCukAQNM0TdO2QjoA0DRN07StkA4ANE3TNG0rpAMATdM0TdsK6QBA0zRN07ZCOgDQNE3TtK2QDgA0TdM0bSukAwBN0zRN2wrpAEDTNE3TtkI6AMgwJSXoCRY1TdO0dk4HABmkXJfy776natFiLxDQNE3TtHZKBwAZJG2H2Q89ypqpU3UAoGmaprVrOgDIIOU6xNauRbkuInWlpmmaprUjOgDIEKUU0rYJLVuG0m0ANE3TtHZOBwCZIiWhRYsJL12uGwFqmqZp7Z4OADJE2jaz77kP0IW/pmma1v7pACATlKJq5izKvvg6dY2maZqmtUs6AMgAGY+z8o23kLFY6ipN0zRNa5d0ALCppKTy2+9Y9errKNdNXatpmqZp7ZIOADaFUsTKyplz9XXYFRV1VuhOgJqmaVr7pgOA1lIKNxxm8a1/Ibo0peufELopoKZpmtau6QCgNZRCRiKsvO9B1v7v3XoD/wghKNx2G4TQWQBN0zSt/dIBQEsphYxGWfPwvyh75nlw3Hq1fwVYeXmgAwBN0zStHdMBQAsoKZGhMOUPP8aahx7DralBpSb7haBo4AAdAGiapmntmg4AmkspVCTC6suuYu3Dj6Hi8dRHgBDk9uiOGQzqSwCapmlau6YDgOZwHOw581hzzkWEP/kMlaa/vzAM8vr107V/TdM0rd3TAUBjlEKFw8SmTafstLOJTPoGHCftWP/CEBTvOELX/jVN07R2TwcADVHKa9xXE6L6rvtYd+7FuCtWgisbn+lPGBQNG6ozAJqmaVq7pwOAupQC10VFIsQnT2X9kccR/s9zqMrKtLX+JAUIn0Xh4EE6ANA0TdPaPR0A1CUlsqyc0DV/pvq8i3DnzoNmDu8rhED5fXQaNhRh6N2qaZqmtW+6pCJR8K9dR+yZF6g65gRi776PCoWbrPXXY5p0O+hAfIWFqWs0TdM0rd0RqtGL2lswpUBKVDSKM/07QtfciFy7DhzH6++feIwLSMBVCgdwlMJWChuIK0lcKWJKEg0G2Gvyl+T16ZP6TpqmaZrW7mx1GQCVvM4fi2J/+SmhG66h5sorkKVrIB4HKVOf0jRh0GnsbgS7dEldo2mapmnt0tYTACjlTdcbi+AunEv4r9cT/uuN2JO+RoVCrSv4E6Rl0uPw32MGAqmrNE3TNK1d2jouASiFcmycGdOJv/MKzm+/oCqqIeKgQg4qZENoQ2M/lUj7N+cSQFRKojsMZfwbrxDo1Knuu2qapmlau7XlBgBKeQV/TRXOnF+wP3kb5+fvUbEYyrYh6kDURYXdVgUAccBGUem32OGpf9N97/EI06y7BZqmaZrWbm1xAYBSEuG6qHgcZ8Y0Yq88hVpfjoxGwXa86/+OhJgLUWeTAoAwivhee7LHE//Cl59fdzM0TdM0rV3bMgIApbxi23FQNdXYkz/Fmf417uJ5qHjMa+0vFbgyIwFAXClihqC8Wxd2e+l5CgYO0LV/TdM0rUPp2AFAMs3vOKjK9cQ//4DYOy8i3LhXjCc/WYYDgCiKVZbJ0Ifvp8+hh+iBfzRN07QOp2MHAI6Du2Qx0eefxvn1R1TNWghYCL+FMI2sBABxJVmmJF0vPp8RV1+J4ffXPk/TNE3TOoqOFwBICY6DM3ce9gfvEX/vbWSsBhEQEDAQQR8EfBkPAJKp/1Ik/qMPZ+Q/7sbMCdY+R9M0TdM6ko4TAEiJsm3UuvWE770PZ8oUVE0lmAr8AhE0IcfKSgDgAg6KhY6NdeB+jLn/XvydOulJfzRN07QOq90HAEomCu3SNcRe/y+x5yciK9cDCuEzwG8kav7ZCQAcIA4scm18hx7Ervfdg68gXxf+mqZpWofWfluvJUfuC4WJv/k/Kvc7hMj9DyHLyr2CvA0oIK4UM+0YBSccx+6P/J8u/DVN07QtQrvNAKhYDPuLr4g+9iTOjF/AcUBJMASY3pLNDIALlDtxFvssBv75OrY76QSsvDxd+GuapmlbhPYVACQm6nEXLSby6L+x33kPFbfBTRTOgqwHAMla/xI7zppe3Rh9x1/pPmFfhM+H0IW/pmmatoVoP5cAXBcVjRJ9+TUqTz2b+Jtvo6KxDYV/lqlEV79qpfjBieHsM54Jr79K9/0mYPj9uvDXNE3TtiibPwOgFMpxkUuXEnrwEWL/exfhugil2KjIzVIGQIZsYiGH5Y5NaXEnBp59Btufdw5Wbq5O+WuapmlbpM0fALgusanTqbz4T1Be7hX8QiAS5X09GQ0AHFTURYZc1laE+aGimq7j9mTsY48Q7NZNj+6naZqmbdE2XwCgFCoapfo/zxF69AmoqMCU0iv42yAAkFGHqsoIC0priPfdhmGXXUKvAw/AKijQhb+maZq2xds8AYCUuNXVVNzzAKEXXsK0bQylMBNlfDYDAGk7hEIxlpXWsNL1M+APf2Dony7Dl5+PYVk65a9pmqZtFdo+AJASZ+061lx3I9FPv8B0HKxEa8RsBQDKlUjXRTqSBcvWsbLCpvcRRzLwjDMoHLQ9ZiCQ+k6apmmatkVr2wBAKdz16yn9293UvPI6putiCYElRFYCAKVASUU0Gqe0rIb5K6spHrM7wy+9mK6jRmH4fLrGr2mapm2V2jQAULE4Sy66jNAHH+OTEhOyFgBgGEgpWbGykt8WlJE3fEd2/+c9FG2/ve7Tr2mapm312iwAUI7D6kceZ80DD2FGovgTBX6mAwACPuJCsLKshpXrouSNHsu2x/2BXnvvhRkMgmHowl/TNE3b6rVJAKAch3UffszCCy/Dsm18CvxCZC4A8BuooIltCdbbLnNLI5g9+zLqb3+hy8iRCJ+FME1d8GuapmlaQtYDACUlbijEz78/GnvOPPwKfEJkJADAZ6B8AsdnsCwcZU1ckjt6dwaedirdx47Fystt+y59Sul2BZqmaVq7l/UAwI1GWfC3uyh9/An8CPzCyEAAAMo0sE0odx0W2RL/8BEMu+gCeu2ztzd0b1sX/IlgJ7K6lEDnYoxAQGccNE2DxLlBSOVVEBqg8M5vwrJSV2la1mQ9AKj8/kd+PPZ4jFCIgDA2OQBQhkAasCIeY6FtUzBmDL+7+UY6DR2KlZuzWWvfTiTK1EsvZ9hll1A8bOhmCUI0TWtnlMKdN5/Y08+iovFEcS+Sxb73vyEwhw4heMYpYJopL6Bp2ZHVAEDaNvPuuoflDz2KT8pNCgAU4CBZ7TosdR3ydhvD9uecRc999vZq2+3gGr9dU8PnRx/HyLvuoGSnHTt0AKCkBOmNn4BUuNEIsfUV3ndiGOR07w5CIAzh7XvD2KzBl6bVcl1v4K/NQAi8Arzub0FKnCnTqD7vEgiFaov9uoRp4ttnL/IeeQDh01kArW1kNQCwq6r4aty+qJWr8AvRqgBAAVIposCPdhS3W1d2/ec9dN99d8yAH9pBwZ8UX7+ed3Ybx/gXn6Nk5506VgCgFNJxkLaNGw5TOWcua76eRNnkqVTNnoMbjaKUl8JMFvY53brR6Xc7UbLLSHrsuw+BzsWYgSCG34ewrI71+bUtg+sSe/Nt3AUL69exhdgo/a7q3J+sk1PndlLyder+rX1+an3eNAkccRjmdttC8viXEvubKdScexGqJlTnleswDXz77E3Bvx8GfRlAayNZDQCWvvgys668Fp9ttzgAAFBKEVKKhU6c6s6dGHLF5fQ/5CACPXog2lmaTLku5VOn8cnvj2S/jz+gy+927hAFoJIS5TjE1q5lxbvvs/rLr1k/YwbR0lKk49ZmAhokBMIwvMU0ye3di8LBgynZdRQ99t2bwoHbe8FAMkOgadlm21Sffyn2p5+nrmkTwu8n/9EH8O09fkMqXwcAWjuVtbOycl2WvPwq0rZTVzVJAXGlWOrE+d5vknvCcRw6fSqDzjydYO/e7a7wB5DxOAsee2JDlaO9S9T4IytXseA/z/LxhIP4/tobWP6/twktWYobi4OUCCEwLMur0VsWhi9Ru7e8rpUkvms3FqN64SJWvPc+v/zlDj494FC+PuEkVr7/IdHSNSjXTd0CTcs4pRRCepN+bY5FOc5mu/ygaS2VlQyAUoroqtV8eegROEuXETSMZmcAANa5DrPtGIV7jGXnW26k04gd2v1EPeu//4GvDz+GUDjEfp+08wyAUjjhCAuff4G5j/yL0PIVXgGdPBQMA9PvI9i1K93G7Umn4cMoGDgAX2Fh7WdyYzGqZs+hav4C1v3wI5W//oZ0bJTjvU4yvWpYFoVDhzDmkQfptMMO9bdD0zJMxeOEzruE+Cefpa5qGz4f+Y89hH/fvXQGQGv3shIAoBRrf/yJyX84AVFR2awAQACOUiy1Y6zt1Z0hl1zMgBP+iJlo4NeeyVic3277C/Mef4KI67brAEC5LpWz5/DrP+5jxfsf4MbjCKXAMDD8fopH7ED3vfei5/4TKBwyGNMf8Br6GcbG10Wl9DIJrsQJh1j33Q+smfQNFTNnsf7nn4lXVqFcly67jmbcS88T6Ny5zitoWubpAEDTmi8rJZRSilh5OU66gz2FVIoQ8INrw4R9OPDjD9j+lJMwc3LafeGPUtT89hsrXngJ5aa5Vt4OqETKv2ruPL459QyWv/MubjQKSmEE/HQaPozxLz3P+FdfZPjVV1Ayahd8BQWYwYA3roJlYdRZhGVh+P0YgQBWbg7BkhJ67j+BHW/+M3s89zT7ffQ+gy84j2DXLux485/xFxambpKmaZq2GWUlAEApyqd/79UQm+AqxSopWdSpiBF3/pUxjz9CoKTEK3TaccofvM8ZX7Wa2Vdci4xEUte2G0oplOOw4t33+PLo46hZtBjlOAjLIqdnD3a4/jr2evUluo3bE3+nTrUDKbVo/wuvO6Dh9+MrKKBgwHbseMuNHPD5J3TdfTc9wImmaVo7k50AAKhetLjRAEABLrDclYS26c/uLz7LgNNOxldQ0C5T5xtRCjcaZek9/yQ0e3a7buSmHIfK2XP49tIrCK9ahXJdhGVRuP1Axk18jsEXX0CwR/fMZluEwPD5yO3TPhttals5IbKyiMSiaR1B1kramkWLEsV8wxxgpVQUHnEYu7/+IvnDhmzoN9sByGiUFffcT9lr/wWnHRf+UrL+51/4+o8nYVdWeil/n49eB+zPXm+8QvFOO+oCWtvqCJ8PggFETjCjC8EgmPXby2hae5WVRoDScXhn17HEFy0maJgbNQLEMKk0TPpcdB7b/ekihM/rK94RKKVQ0Sjr33qHJTffTqSykpiUxKRLVEqiKA6eOolOg7b3agWbWWR1KVPPOZ8130z2av4+H30OPojRD96Hr6ioY2RbNK2ZmtsIMO/+f+A/YL8Ntfe6p8HU23Xvx8v+NXibxFwlfr93Pkuu140AtXYqa2f/mqXLGkwASMMgnJPH0IfuY9vLLqgdxrdDUApiMcoeeJiVN92OW1VdfzVe8/iCfn3bReEvYzF+ueMuyqZO9S5RCEHhgO3Y+Y7bdeG/hVBSIh0HlRjFUSX+r9etczNRSnkDTSX6x6duX2OXCLNNBAKI3BxEfh4iL9f7m1xSb9e9v+661Nv5eYjcXK+9Szv4/aOUN4iX44DjoGy7dsH2voe0g3xpW4WsZACU4zCxW28CUhE0kxkAA79hovx59L/1OnqefDzC70t9avslJe669ax/4mnKn/gP0VAIW0riqA0ZAKUwevXg9z98i+H3p75Cm1JKsX7Gz3z9xxOJrC5FGAa5vXsz7uUXKBoyuF0HXSpx4pK2k7hk4fU6SHkQXhfEREGSrJQZIu2+V66LdByQ3pTNhs+CljZ2bEKysEsOBpMcCbEpyYaa0nYQhoERSNMItk6h6kYiVC9cRGjxEtxYjHhFBf7iYoQQBLp2oWDgAHK6dfPePzFiY9Ylv5Pk9i1YSGTlKpxQCLuysjbwzOnZk5yePcjt0wdheiNJJq+hb4rmZgDyH30Q/8EHtM3EO22ZAUj8dpTrokJh5Nx5yNWluMtX1JtbReTnIbp0wdimP+aAbcG0EKbR8suwieOWZMBZ9/urc1v4fC3b11Ki4vENt1NfG2+8EmF5v+EGSQlSoVT9IEcACoGwUuZsoM7+kwqU1805GUgLywfCK9+QckOmKPUzGwbCMGFT5nSQ0gvU6hbPyfdK/BVCeMdKS/ZriqwEAG4sxks9+9ULAALCIODPp/cVF9PzonMwAg2fpNsj5bqomhrWXHQ5VV9OwnEc4rBRABATUDRuT/Z+ZaJ3wG9G0nH45pTTWfXRJ0jHwQz4+d2df2PAaadsXJi2M8p1Wfbm/5h+2RUgBCPvuoNtTzx+w3qlkPE4dmUVayZNYsW777P2+x+IrVvPoHPPZsSN19d7vaTYunV8euBhhFesQFgWY598nJ4T9kl/AmmFdT/N4KtjjsOJRAHY642X6bLrrk0Wvsp1+e7Kq1nyyusYlsWRC+d4g1/Ve5DCjcWIrF7NvMeeYMlrr2NXVSGTgy8p5Z0UEpM0GZaPLmN2ZfBF59NltzFYubnNCkZaS0mJEw5Ts2ABcx97gmVvvY2041732ETgIgxvHglvbAmTwoEDGXjOWfQ+9GD8RYXe5cDUk3ILbNUBgFIQjSJXrib88GPY772PitsgvQm96hUmie8By8Ls24fg+efgP2g/REFBy34PjkPNZVdjf9r4/i764H8Y2/RPvTu9WIz1O+2aei+wYe4Fo3dvCp59AtGrZ4PHjIpGiT78WG0gUXeIeWFZBE78I0avnhsKcKVQsRiqohJnyjTsSd/gzp2PO28+Csg59yz8hx1CzRnnItetq78/6xCWj5ybrydw3DGpq5pHSpwZv1B96lnQ2Ei6pkXe7TfhP+rwln1ndbTuWY1RipolS7xaXB1+M4euxx5Jj7NOwehANX9l28S+mULpUccT+fobb5jRNIRhkL/dthtHlW1MuS5l30xm9Wefe9f9TZNOO+xA/+OOzWoBkCnJMQvcaBQ3EsFNFKYkPtv6GT/z7UWX8sEe45ly7oUs/e9bhJYuw41GGh16WrkSN+a9poxFvcAuzY+4tZTj4EZjOJEIbiSCcmW9mldaSiHjNk4kghON1Du5KKW873Tat0w5+3w+nnAgcx9/glj5WmTc9j6H6yZqPF7tT9re/iv96msmnXQanx1yOPOeeAo3kpjUKcPccJhFz73Al0cfxycHHsaSl1/FDYfrb1/ic5DYPhmPU/Hbb3x31dV8tNcEpp5/EVWz53iP0ZpPKXAc7K+/ofrsC6k8/Fjs/76JikS99H9q4U+ydizBtnEXLSZ8/U1UHXsi0QcfQVVXb/z4dBRgx1GRaONLS79TKTd+jcRC8v9YDGQjv694nOhTzxJ9/Elijz9F5LEniD6W+P+Jp3F+/c17H6XAtol/+DE1Z11A5X6HUHPFtcTfeAvnl1kb3tNxMLp3xRiwLUQ33q7kImuqiT31DCq64bzVIq7EmfQNKhzZ6LVr90Eshgj48U3Ye5PKm4wHAN7Je8OXLYBcXy6dR4+i783XYhbkb9IGtxkpkeVrCT30L9affQHO/AXgNFFgCIOSUSM3++eTjsOil17xJvNRCis/n13uuQsrv2Pse5FM0yWub0dKSyHR7XLh8y/w5THHsfTN/xEtK/euaSYuAzTZBUspUIkJkKRXY840lajpemnERM23ue+jEtdspSK2br33XClxQyHmPPQoXx59HCs/+NBbB1h5eRQO2p4uu46mx4R96bn/BLrvszclu4wkv1/f2mll3ViMilm/MuPm2/jqjydSMXNWy0/IDVBKIW2bipmzmHLuBfxw7Q2s+/6H2pkjDZ+P/P796DJ6FD323Yee+02g534T6LL7GIqGDsXfudgbYdJxiaxaxfK33+GzQ37P/KefIb5+/WZtI9BRKNdFVVYRefARqs+5EGfyVFR1tTckd+L4S1uYJ48310XZNnLeAiIP/YvQ1Tcgly7zgodmUDJ53DaypNmEdFTtbyH9IlJmbdyIUl72w/EuyyX/KscB20EuWOidDyorCd9zP6HLr8GZPAVVVe21mXASczzUeT+CQQJ//EPj2+dK3BUrcecv9G63lHSJf/pFInhr4PWlRCHwH3eMl7Fp7JzXhIwHAKl8wqIwWEiv6/+EWdTC9NLmICXE48SnTafyxNMJPfKYF3U1ccJUgOH3U7Dt5s0AJGuLa7762jtoDYPOv9uZwsGDGi8c2yulcGqqcaMx5j76OD/9+Rbi69aD62JYFmZODr6iIjrvvBM999uPktG7pL5Ch6OUIlZWhpISu7qaby+5nJl3/QMnHAbAX1jIgFNPZvzLLzD+tZcY//ILjJv4LONeeJZxE59j/MsT2euNVxn7xON0HbMrZk4OJAKBsslTmHTiqayZNLnRbElTVOIyzKqPP2XSyaex4v0PcaJRFGDl5NDrgP0Z/+qL7P3Gq4nte45xE59lzxeeYfzLE9n7tZfY5803GH7tVQRKOiN8Fspxia2vYMZNtzLtgkv0JFJNcV3UmjJqLryM6MOP1dZS0xb4TVCui4rHiX/wETXnXoS7cJFXAG6JlMT5eRYqEiFy5z3Enn4OFQ7XzmWSjjBMfHuPx+zbt9GyTIUjuD/NaPS1GiQl7uKlOD/PbPS5RlEhgYMPaHQbmmPTnt0EAXTy59H5+KPJG7NL+04/K4WyHdzlK4j836NUn3sRzuw5XrqlkS8iSQgBuUGKhg7ZrAEAUlI+7VvCK1Z6tWLLpNf+EzBzc1Mf2WHE162nbOpUfrv/QeyaGkg0Iuv/h2PY/YnHOHT6FCZ88C5jn/43vQ46MPXpHZITDuPG4sy84y6Wv/MuTjiMFQzSc7992evVFxl51x10Gbs7eX374i8uxgwGMQIBzJwggS4lFAwcQO/DDmGv/77Krg8/SPGIHRCWhXQcwsuXM/X8C1k/42evwGgF5TisfP9Dpl1wsTeypOti+n30nLAPY595kj2eeZJu4/Ykf8B2+Dt3xsxJbF8wiK+wkJzeveg0YjhD/3QZB339BUMvvYRgt24Iw8AJh1n58SdMPfeC2uyPlkIp5Np1hG+81av1x+OZ2U9KeSno2XMJ//lW3FWrM/O67Y1UOL/MxP76G+Lvvo+K1L/slpbwepD4f39I4+WZ6xJ//6PmvWYdynGIPTfRq/2ne65hYPTtgzFw4CaXNVkNAPzCpKTftnS/7tJNjlSyzrax//cOlYf/gfCDjyArKluUvhGWRZcD98dfVLRZa9rKcVg88aXag8fwB+h92CGbdZs2VfXCRUw99wLiFRUIIei662j2+/g9dn3oAfocdgjB7t02zFnQ2I+ygxBAaMlSFk18kQVPP4O0HQzLZNhVf2Lsf56k8+hRzRoqWxgGZjBI/2OOYt/33qb3wQchTBMlJZGVq/jiyGOpmjM39WlNUkqx6uNPmXbBxcQrKgAwfD52vPUW9nzuP/Q6YH+ve28zfvOGZZHTqyc7XH8NB076gqIhQxKXBRzWfDOZL478A064mSfnrYiybSJ33E38U6+dT8ZJiT39OyJ33uO1Rt/SSIlcspTwzbejqmtS1zbOEPgm7AONtWVzXZzJU5Frylp07Kp167E//7Lx5yQaMIq8Ta/UNf0LbSWBoJuVx4Lq9URDLdzBbUVKVCxG/MOPqDr1bEI33Ixav75FBX+SDPgZcu45qXe3OScSofSrSbW3O++0Izndutd7TEez9vsfiK1dhzBNtjn+OPZ4/j/k9OjR/oPKVpJSUj1vPr/d94DXgyMYZOe//YUhl17crIK/IWZOkNH338PAM0+v7aHihMP8/Nc7cMMtmMdCKarnL2DGbX/BiUYRhkGgczFjHv0/Bp55etoumE1KvM64l56j5/4TMHw+lJTULFrIjFtv36TLFVsapRT2O+8T/+hTr4FfcxgGWKbXw8CywEz0AmiMVNhfT8L57ofUNVsGpbwCuqXne8PAGjEco3fvRs9BSinib7zV/MsoSuHOX4AsK0tdU4/Zv5/XgyUD0m/9JvIbJoVGgClL5/HJVdfVNgxqF5RERcI4s36m5spLCV17Lc60b1GRaKOt/NMSgoKdd6RwwHapa9pcrHxt7bVigK5jd/f6u3ZgynFACLrtMZZd7r2bQHExwjRbVRB2CEox/6n/EFm9GsPvZ8glFzHg9FMxfL5m1aobIgwDf3ExI66/hh577+VlAlyX1Z99wcIXJjZe40hSCjca45fb/0r1goWgFEYgwIib/kzfw3+PGfA3XaikIRKTSeX26cOof95L8Y4jEKaJtB0WPvMsqz/7IqNBgLtyFc6cebiz53jLnLmN/637uLrL7DnIxUtafSmlxaRErVxF+K93QTjc+PcmBMLvx9imP74D9yf3mivJveUG8m79M8GzTsfaYRiiU1H6QkwpqK4mdM2fvRbtjb1XR9Xaz+T3k3PZRYjGAl6lvAxNKE3Xz1SOg/3FV6hoLHXNBqaJ/7CDIS8/dU2rpPnmN12OsKiWksXhKj568zXmvfd+dlJVzZVoHKficdzFC4nccxuhm67CmTYVFY144/m38mBQPovuvz8MIxBIXdXmYmvX1jtRFu84ot33+28OKzeXHa67BjMYTH/C2lIoRTRRC+g2bk+GXHoRZiDQ6sI1SRgGvqIiRt9/L3n9+4FhIONx5jzyL8IrVjZ5/CvXZcW777Lyo4+9LlE+i21P+CPbnnA8hs+3ydtHYhtze/VkzKMPkduzBwKQcZuZd/ydWPna1Ie3WvSBh6k5+UyqTzyd6hPPoPqE073/T0jePq3O/WcklsT6E05L/E0854JLm1/L21SuJP7Gm8iKisbPp4aB6FxMzg3XUPjC0xQ8dB/Bc84kePIJBE46npzrrqJg4jPk33c3Rr++aSsJynGRq1ZjT5rS8ppyRyWEt/8syxuXwu9H+P2o5NgJCb69x2H07VPvqXUJpXDnzUeWNu8ygKyqJv72e40+Vvj9+MbvUdvDZ1Nl7UxaZAaYEav0BsiJxfjg1lupWbas7bv2qMTITtEwcv6vRJ+6n+orzyA+6XPU2nKvm8gmUIDduyf9jvh9q2tnmRRfX4FKfCbDsvAVFbaL7doUwjAoGLAdJaN36fCfpSVMv5/BF5yLLz8z0T6AME2CPboz9NKLMfxemj2ychWlX09q8rcpbYeFz030RmgECgYMZIfrr8XMCWak8K8lBPkDtmPQheeDaaKUomL27A1DWmeAqqpClpUhy8oTfxv7P/W++o+jorJ1mcPWcB1ib77TeMBhGBidi8m/9+8ETj0Ro19f8PvrXQIQPh+iUxG+CXuTf/8/oFOn9N+hdLHf/zBj+77dEgJME5Gfjzl8GL799yV4/tkELz6f4CUX4B+7W/19lJuLb9zYtBUSpRSqqhp70mSvd0ET7C++Qq1dl3p3PebQwVhDhqTe3WoNb/mmEIJg58508gX5JVqJxBsadMGsmbx34cXEKypTn5Fd0sVdOIfQndcSuv0K4h++CbHYJhf8JAr/qJLs+JfbCHTunLp6s1COU3siN4PBDt36P0n4LC8F3li6bQvU88AD6LJbykknA4Rp0u+oI/Al+hBL22bR8y80WvNQUhJesZzSSd+gEl0wex96MIEuJakPzQjDsrxtzMsDQMbizP/3U8hYneFhtzauiz39O9z5CxqtjYtAgNzbb8K39/imRyQ1DMydRhDYf4LXLqAhrsSZNr3tgpzNxTTx7TWOwrdfo/CV58l7+AFyrv4TOZdfTM5lF2GN3a1eYS8sC9/e473gKh2liE18CWE3ftwqx8F+/6P6wx+nEoLc666CnGDqmlZL8423nhCCYEkJYBJRsnagBiklP3/+KZNvu514ZVXKszJMSohFsb/+iMg/byF8x5W482ahYpm9juUKsPbYnS5jRqeNAjeHzBYX9cl4nEUTX2L+U/9h/lP/YUGdv8kl9f56f595jnhVVYvagximRbdxe6bevUUzg0EGX3ied109w4QQ+IqKGHjG6V7qXkrKv51OzeIlabMAyraZ89Cjtde6/Z2LGXDayVnNyARKStjhhmtr23qs+2kGlXPmpD5s6+G6xF59s/FzmGFgDB2Mb69xzT4nCcvCf8Jx6a9nK4W7bDnuipWNBh4dmSgsJPeaP5H/0D8x+/fzJnnyJSZ1qruksEaNxBoyKPXuetyly7x+/Y1Q5Wtx581P/90aBubgQZg7jmj299ocmXuluoQgolziKZMwxGIxJj/5BN/d/lfsdGNit5byhsNUleuxp39FzU3nE3nyPuyfpqEi4Q2TVWSIEoK1QR873n4LvoKC9tMgrc6kL248hmysQUkrSMdlxi238eP1N/Lj9TfyQ52/yaXe/df9ud7tn270BvJpyd4SPh/BLNU02yUhyN+mP3n9+2evW6MQDDj9FMxAIDGqmWLNpG/SnuCdcJhl/3u79nbPCfsS7Nat3mMyzfD52PakE/Al0tMyHqf0y69SH7bVUDUhnB9/avQ8Jnw+gqee1OIR4syBA7xx8dOREvubqc3vddCR+Hz4jz+WwBmnIgryvcskzdx3IieX4NlnpM+eAMK2sb9O/9tCKdxZvyJXrkpds4Eh8O051ptAr5nb1hzpt3qTKFSaiCkcDjH1qSeZfuPN2DU1aWsczSa98azV+rVEX3uW0B3XEHnkTuTKpRBPpPob+cG0hhKCtYZg0I03UDxsaPZO0q3g79QJhPe1yriNm+GsB3jD00rHad7iukjbxo3FcKNRZDzW4u0Jdu+W0ai33ROC3L598RUWpK7JKH9xMYVDveuJSinKv52e9vcYWrqsNv0uDINeB+6Pma7GmClCIEyrdhRL6ThU/DJzy78WnYZcuxaaaFEu8nLx7ToKFQp7S01o4yV5f92/8ThGj8a7C8tZv9a2L9qSmNtuQ855ZyOCLU+tK9PAGjUSo1evBss78BpS2t//mH5iH6WI/ud5cNKsFwJMi8CRv8/4eTCzr5YghKDTkMFpa8U1VRVM+/djTLvyWqLl5a37QSvlTSqyehWx/71B9YWnEn3+cdx5v2Y81V+XAtYpl8BB+zHglJPaVeEP4CssqNfqv2LmLGRr9m8awjDpPn4cvfbbl1777UvPCfvQc8I+9f5Pvd117O5eK/ZWEk2N8b+FEUJQNHjQxrMBZpiwLPKSrZiVIrqmDJmmO1u0rAw3cR3Tys8nr5/XiyDbDNOgYNttvJOgUsTK1+I2dp20uVJTu5uwqMR5IdtUZVXjXcQAWVlJ5T4HUbHL7lSM3M37m7ok76/7d7e9cKZOT325euSq1elrsR2VYXgNJVvZhksIgSjuhLXTCO94SMP9eSZuAzV8JSVy4WLsqd+mbyhoGPhGj8QYPjTjs1dm5ResACfob/RitB2P89Nzz/Dp0cc1eu2xIUpKVHU1kUcfpfqs0wjf93fc0tUZT/OnUsB66eKO34Mx9/1jkwq1bMnp1bNeY7nK32ZntI+yEfCz+5OPs+fE59jzxecZl1j2nPhc7f/jXnqh3u0xDz/QbhpJdgRCiDYZUtqwrHppfCccSnusuJFobfrXys3BSjTOyzohCHbtWrsv4pWVyAwEAMIwvBbfluUFzIm/qUu6++s9xjDaJEBV8XjTE/S4EhVvxux8Dcwul+67T3IXLc7q+XVzMPLz8f1uJ6+HRCuJQIDAicc1+ntVkQixp55JvRshFfEvvmy0V4cI+AmedUZWAu7Mv2JC7sDtMBKp6IYopXBsmxU//cgXJ57K8v+9g9tEdIvrosrLiU18iaoTTiT65BPIsjXgut5MTVmSjPDLXIfInrsx6q47M9o1K5Os3DxKRm2YEKds8hTs6up6j9kUQgiEYXgD8ST/pi4p95PSf1ZrmmjliH8tIRJDBdfeTvwuGxJft65OdiBR+20LQpBTZ753pRqZ3a4FghecS/4Tj5D/5KPkPfkoBU8+6t2usyTvz3vyUfKTSwOPybvnTmiqtX0GqJoQKt7EORIvm9OqpQlKqcbqdB2SKCyAwsLUu1vGMPCN2RVzyOD0GWHXJf7OB8jKynr7WrneNM5pe6UJgdGnD9ZOO2TlfJC+hN4EXgpzIIFmpDCl47Dmt1l8c/7F/Hr3vdiVlUjHqX8ikhJVE8KeNJnKw48hcuffcRcshHgc3OZnDlpLAqtch6rRv2OPf/+LvL59str6eVMYlkm/o4+sPVgipWsomzw19WGalrawb4iSKisnoOZoSXawuYyhg/GN3xPf+D3xJ/769hpXb0neX7s+3WPGjPYGick212mbaw1pCMPYnG+feUJAMIjI9WbLbDXhjR8QOP7Y9Cl6pVChEO4vszYEANKbedaZ+m36xpWmiW/cWERJSVaC7qwdtcFBA+jmz20yYlR4I4zFQzX8+uBDTD7pdMq/moSK24l5m22c73+k5rKrqLngEuTqUu86WEoPg2xQgAMskA7xfccz9pGH8BUWpo/y2gFhmvTab1+sRCtg5TiseO/9jA6jqmVffN26FhXQrSIldmWdcTkaaWsR7Nql9rhXrtN2E8QoRXj5itp9YSRS7ptKJHvLmOamL210CUDkFzTdrz+LzG36Z6UQ2qxEZrJZSgisXUd7vQjScRycKdM2FPauJPbcRFQjk12J/DyCJ5+YkWO+Idl5VSHw9+jKkM7dMZu7c5XCjccpmzSJaaecybwHHyY2bz7h+x6k+rRzsD/5DFUTatNGKBElmaVszIP3Z7dHHyK3T+92XfiDt++tgkK67THWi9hdl/Jp3xJd0/gEE1r7oZQitGRp2pNCpkjHIVpWXnvbzM31rmk3wMzNqc16OaFwRi8rNUZJVW+YYn/n4uz3PminhN/X9LXqxJwKwmogUEmzCGvD0tB9yftFz7acgKuZ5UY7IQwDa8ggjO0Hpt1HynWJf/pFbbpfhUNEX3499WEbCIF/370RfXunrsmYhrd0UwmB0asHw7v1wmzBF5l8pIqEWffPB6k+/lSi/3oCVVPTZgW/Sqb84zGmOzG2u+Umdn/wfvyFhW0S5WeCYZn0PuRARKJvamTVKha/9HL2a5QdTXvdH0pR8etvGWns1hhp29QsWOjdEIKiwYPT9jzI7du3dq4LNxKhav6C1vXeaSkpqZq/wPuuhCCne/etbkTIJJGfD001PPb7yX/uSQpenUjha40sr75Q+3/BqxuWhu5L3p9zxaVpA8SmqJWrmn0Oz1Q7jzZnGORcfH76kQGlxJ0zF+f7H73pgn+bgyotTX3UBj4fvoMOSD9AUwZkJwAAjE6F9N5hBD0CLWstnCMM+vsDDDAtzPUVXqvXNjoYVGJo39/iUVaPGMr4V19mwGmnYOXmZiRN1FaEadLniMPJTwwkI+M2v957PxU//9I2J+12ygvgvGNJKUV4xYqMH1tuKLTJ16yVUoQWL876sNmhpcuoXrTIuyEEJaNHpc1w5fbsQbBrF0hs39LX3kDGs3sZQElJpLSUmoXezIOm30fJqJHttv1NtoluXb0goBECL9Vs7bxT48vvdt74viYWo2uXjWu3hmjWxDTO/PnNb6/lutiTJqfe2yFYo0dhNjYyoJTEXnkDFYnifveD1wMjDaNLCeaOO2S17MneL0kIco89lGEFJc3KARhCUGCaDM/Jo5fPj0kb1tAUuCjWuA5TnBj+E45j79dfocvY3bzoK4tfQFYIgb+wkB1vvbl2XnU3FmPm3//hnbTbar+2N6axYW4EpYiWrtnkwroupRTrf5656YOlKEVo2XKq5s/PWsCmpGTOgw/VTrVsmCbdxu2RtnA1AwEGnn1m7W+h/NvpVM6endWskozHmf3gQ7iRCEopDH+A7nvvlfqwrYYoLMAcOjj17nqU4xB7/U3vpGaZmV0aOjYMw5tSuAmxiS83Ps59XbZN7In/pN7bIQi/z0vbWw0H0iiF88OPyFWriX/wcfqsiBAEjjkSs1vX1DUZ1cA3mjnBPUax3dDhjbYDEICBoK8/yE65eeQZRrMChkxQgFSKKtflZzvGskED2PXxRxl1x1/wFxVhWFaHSftvRAi67TmWLruNQSTmfl/1ySfMeeRR3Ggsqyfu9srw+/EXJU5WSlGzeHFGAwAZi1E2ZUr6AT1aQLkuv917P044nLpqkykpqZ6/gBUffIR0HC9jdNgh+AsL0wa7wrLof8zRBEo6gxDIWIy5jz/R/JN6SylF1Zy5LH75Ve+2EPQ57BByejQyXO0WTlgWwTNPA7ORRoeui/3NVNyZvzbat7xRyptBtVkVBSEwijvXXm5Mx128lNjb74LdSEZXKZRtY3/2Jc7MWalrOwbL8uZhSJe2Vwq5ahXxt97GnTs3da1HCIxORQTPPBWVJiOXKY1/a5tIBIOM+MMxdPGnn5HOEgbDc/PZPieHQCPjBmSaAuKOy+KqMN/GXQpOOI69Xn+Fvocd6qX8twD+Tp3Y+babCXQu9g68uM2v9z3Aqk8/Sx95ZoNS7SLgMAMBgsmIWikqf5uT0QAgvHIVFTN/zdhrlk/7ltWffpb+hNlaUrL0tddxQjWgFGYwyHanntxwDS9JCHydiui53wQM00Q6DqWff0n1osWpj8wIadssevFl3EgEACs3lwFnnJaVyZHaB7Fh2PJk4Zv6vZsm1sidMYcO9YZaT0OtX0/1pVcgl69oeuCguhLvrWIx5JqyZgd3xjb9wGziMkAsRvTeB4h/8hmqutp7n+TnTPyvKiuJv/4m4etv8tp9dVDm0MGYjUzZqyJRIv/3KCrdzJaGwNxtV0Rh9qdyz+6rmwb5h0zgyJ6DGswCBAyDkQVF9PQHEW1W7wdXSpaUVTNtZRWhcfuy/3tvM+quO/EXd8r6Dm9rRcOHsfPf/lIb1DihEN9fdQ1L33gza+nlepTyRm+LNWMAkywTlkWnHYYjLAslJZVzZlM569eM7Afluvx69z1EVm083GdrSdtmziP/ymgWQDoOayZNZs6//o20HYRhkNe3L8U775S29p9kWBYDzzzdawgmBNE1a/j2gouJrV23cWG1CZSULPvvWyye+JJXSAhB93F7UjRsaJPb2GFJifP9j4Tv/AeRex4g8re7CV13EzJ135oWgeOO9lrrpyGkRC5dTtUJpxF78VXUuvVp21IpKcFxIR5HrlhB9PGnqD79XKqPPh7n2++aFcyaw4aCv+nuiXJNGaFLrqD6j6dSc82fiT//IrFX3yD23ETCl19N1R9PIXzz7chszxabZcLvJ+faKxoPqKVMXwkzTPyHHNQmY0tk/R2sPj0Zduv1bJ9XgpH48YpE4b9jQTGdLX+DwUGmKaWwHZfVa0NMm7+O0t6D2fn/HmLsQ/9Hp6FDED7fFlf4kyj0+vz+UAZdeF7t8K3RNWX8cN0NzH/6Geyqqmb9yFtMKWQ8zsqPPmHyaWcRr6jwTt7CaDJdmC1CCHruN6F2CGdlO3x/7Q3etm0CadssefV1lv43c0GVGQyCYbD+pxl8f9W13jY2cAJvCeW61CxYyPfXXo9TXQ1K4S/uxC533YG/qCh9WjnJMCjZZSRD/3SZN4uglKyfOZOZd96FEw5n5DhSrsuar79hxq1/wa6pQRgGOT26s+OtN20xmbkGKYWqqib2zAtEHnuC6NPPEn/7PVRq4Gwa+A892OuTn+Z3pFRinpQVKwnd9jeqjj6e8N/uIvbKG8Q/+Rzn62+If/YFsbfeJvbkM4Ruuo2qP55C5f6HEb7nfpyp3+KuWEls4iveYGtNsAZs6wUBTZHeMMXOb7OJv/EWodvvJPznWwn/5e/E33kfd848b4yXDBxHm5VhYA0dgjloYMvLFMPA6NYN3757pW2Qm0kt3LqWEz6LnGMPZe/9DsY0vU6BfmEypqgL3f3B2qAgW5RSOK5kXWWUKTNXMTeey/B77mefF56jzyEHY+Xlev1ms7wdm4sQAisnh+FXXcmQyy72UqhKEV+3np9uvIVpF1yCEwp5Xc42sYAhsb+lbROvrGTGzbcx9bwLqVm8BJTCCgYZcvGF5PTsudlqckXDhtJt3B61718xcyZL33gTN/VE2wwqEeSsnzmLGTffhhu3wTRqW8u3mhB0Gj6MYNeuKFey9I3/Muuue7y2G60MMKTjEFqylEmnnE71vPkoKRE+i+1OPomSMaOb9X0IIRCWxfbnnEmnHUd4PUxshwXPPsd3l1+JU1PT6u1LBoxlU6Yy5axziK7xGmgafj8jbriOgoED2uSEmDXN2L8o5aXd43FvPH/H3igvKgwDo2sX8u6/25vAprHXlRJiMdxFi4k+/RzhG24mdMmfqDn/UmouvJzQFdcRvvMfxF58BeeHn1ChMMRiXtsBKYl//qXXZa0pPj/BM07xGgo2JRGcYNve/APRKCoW8waWyvJcLm1GCMjLxTdmV1QjX09DhGURPOtUjBZO59xaWQ8AEAIzGGTwn69kn+12xG/52KGgE8WWf6ODO5OSBX9paTU//rKSWVU+trnocvZ76036HXYo/k6d0vZ53uIIgRkMMPSySxh6xeX4ioq8BpDRKMvfe58Px+/LvH8/SWR1qTdiYHMbACUlr+M5DnZVFUtefZ2vjjuBeU8+RXz9egACXUoYceMNDLvyTxibcTQzKxhkyCUX4Uv8wGQszqy772HJK69hh0Io121WewWVqM0se+ttJv3xRCKlpRimwfbnnk3nXUamPrxlhCDYozu/u/MvmPn5yLjN3Mef4LurriW8cqXXcr8Z20hiO6VtU/bNZKacfR7V8xeAlAjTpNvuuzPwnDPrzQfQHP7Ondn1/nsp3nEEwjCQsTjL3vof3150GZW/zfaOoeZun1Io18WurmbRxJeYet5FxNauQ7ouVjDIgNNPpf8f/9Dq/ufthSjIb/o6eXMJgTV0CIHzzvIamzVVUEjpzaMSj6NqQsiqKm9a4XjcK4gTBf5G31k0QvzVN9JPY5tkmfhGj8IaPKjxtPdWRJgm/qOPAMNs+vupQ3Ttgv+gA1r0nE3RNt+WaeAfOYKxf/8L+/bchr6B3KzV/BXgupKK9RGmTVvEd98vJWfIKPb/7xuMuPxScnr06Ng1idZKBGLDrvwTo++/h0BxJ69HvJTULFzETzffxgfj9ua3++4nUlaOE4k0K6WrlMKNRomWlbPw+Yl8OH4C0y+9nPJp070uh0IQ7N6d3Z94jEHnn4OZ07LCJuMSaex+Rx5em56LlZXz3RVX8f3lVxJavhwZjzcaBEjbJlq6humXXcm0Cy8hUroGgMJBgxl03jn4i4tTn9IiQnjDk/bafz+GXHg+wjJRjsPiiS/y8b4HsPKjT7yUeyPbSKLWH1+3jll33s1Xx53A2h9+9GroQtBp2DDGPvMkeX0S0wG3gBCCwqFD2PXB+8nt1QsANxZn+Tvv8vkRR7PohReJV1Y26/iRsRg1Cxfxzaln8v1V1xJevjxR8/ex7cknstPtt2AGAh07QycE5jb9EXkZvITh85FzxqnkXHJB9oYHdiX2lGm4ieO7MaKkhOB5Z0MmA7WOfJ42Tawdd8C366jmB0VCYA0djOi+YYbObDNvvfXWW1PvzAqlCM2dQ+zTzzBsB1MIDLz+/4bwmgAaeO0DROL2Rj95byUY3iIMAaYAS4Bl4AjF6vIws+eW8ePc1cyqqGStHSe4qgz59bcIVxIcsI03klhHPqFsCiEoGDiAXgcegBMKUTV3Lkp6LY5lNMaaKVNZPPFFVn3yGWVTpxFatIj4+gqcUIjomjVES9cQXV3Kuh9+pPTLr5j/5NPM+/eTzPrHvSx/+x3sikqUK71Upd/PwDNOY9T991A8YgdvONHm7HcpqfxtNsvffQ+UItClhAGnnZKxEeCEadJlt12JrF5N1Zw5KFeipKJyzlyWvvo6a77+hup584mvW4cTiRArKydausbrOvfe+8x5+F/M+se9lH37rTcTpWnSbbcx7P7UY+T06EHFL7MomzwFgG1POqF5k0dJyYr3P6Dil5kIw6Bg+4H0O/IIOu/yO3wFhZRPmYp0HNxolBXvvs+qTz/3tt1x8BUVIQwD5ThI26Z6wUJWffQJcx58iJl/v5tVn3yKtL10suH30fewwxh1393k9OzR9HalIYTAX9KZ3gcfRM2ChYSXeQW3G42y+tNPWf7Oe1TM+IV4VRWGz4eVm+dlV2wHu7KCtd/9wJKXXubX+x5g5t33UJ0cWVAIAiWd2fn2Wxh0/rn4WjoIl+tiv/M+7sLEAEdp+A87GHP7Ac0/OW8KIRCBgHf9+9vvm989z2cRPP0UL3vQ0D4wDKwdhmP07Y0742dvUJkmgsKWUtEYRiCAb4/dU1fVJwTGwAEIpXB+nNH8z9gQIcDnI3jWabhz5qXNQBhFRfiPPQojXffVWIzoE/+BdANWCYHRuTOBPxyFyNb01oEAzmdfeN0fmyCCQXL+dCnWkMENf54sEKqpakQGKNclumgxvx1xLEZFJZZU+IXABCwhsBLBgNmcAKBOoS8sA+UTRE2oiLssLK9hTTjKwmiIdXYMQyksBH4B3YP5DOvUjV5Dh9H30gso3HMMVqeijh1lbgLlurjRGCs//JA5jz5O9Zy52IkhlxWJyVJMb8IUkUhjCSG8dckUuJLeSd3d0KXHsCzMnBw677wTw6+7mpJddvHaHbTgRKsch6Wv/5epF1yMcl0KBw/igM8+wmpiFLSWUFISW7uO76+4mtKvvsaurq4tgIRpJj67iZE4PpLZEqUkynFrr3WbOTl0GbMrI++6g/zttgVgzkOPMOOW2wHY99236Lr7bk1mnZTj8O0ll7No4ksI06TXwQcy9sl/Y/h9yHicpa//l98e+D9CixcjbW/wHmGZGKaFME3MnCDBLl0ILV/hbafrIl0X5ThejdqyCHTrRr+jjmD41VdkbFIr5brYNTX8dv+DLHnldSKrV6NcN9FewPT2YWICn9zevYmsWuVdlnAckC4yuS+FwAoE6Dzydwy7+gq6jd29VYG6iscJnXcJ8U8+S11VT/6jD+I/+IC2/f2Hw9RceqU3HnxT3fOEQOTmUPTZBxg9e6TdD0pKhOvizPiF8N/u8grMcLj1bTGShDfDndGtK749x5J3799TH7ExpVDhMOF77sd+823U+oqWb4dhIAryCRx9BDnXXEnoupuIv/NegwGF2a8v+S89i9mnd4P7R1VWUrHbXt4cMg0RAnPgAApefhajaxYG3FEKuWw5VX88GbliVZPBmbXDcApem5jZTFET2iQDoGybRbf9lchPP2O4ElOITc4AKCFwBSyribFwbZif11byQ1UFS6Nhoq6NCfgBXyLIsB2bsnAV61evwv18MrFJ0/F164q/T0+vFtTAAbQlE4aB8FkUDR5En8MOoftee+LWhImUltbOtKiSBYltI+Px+ovjeEN7qkTLVcvCysmh3zFHsfPttzLwnDMp3H5g607iUlI1ew4r3v8AIQz8JSUMOD1zGQASx5iZm0OvA/eneKedqFmwgHhFhZehkBJcr5BK/czK9bqlGT4Lf3ExO95yIztcdzW5vXvVNiaNrFrFinffRxgG25x4PPl9+za9DxrIAPQ94nAMnw9hmnQaNpReB+yHlZtH1Zw5SNfbluR344TDRMvLkbEY0ra9QhgQpoEZzKHXIQcz6t676Hf0UVj5+a2u+acShoEZDNJ1tzH0PvhABFC9YIF3DElVuw9VPE60vBw3GvUanLquN8Ww6WWKioYMZpf7/sGQiy/05iTw+ZreZw0QUhJ79wPUkiWJ4HXjBcPAd+jBWAPbKAOQZJpYY3ZFVVYmMhSJmehMb5swTLAshN+PkWhE5j/8EEQgkHZfiGRB3aM7/gP3x9xxBHLxEm/eeSE2nDMbI4T3/qaBsHwIvw+juJjAWaeTe/01BI46vHmpfSEQfj++3cdg7TgCd8FCZEXlxufxVIl9IPx+jB7dyfv7XwiedDwiLxeRk4P9wYcIpep9f8IwoKiI4DFHItJlAOJxok89i3CdDc+pexwIgVFSQvDYo7JT6AoBeXm4M37BnT+/8QDAMAheeB7WyJ3btJdU1jMAynWpmfUrPx9+DFY0hh+BT4hWZwCUIYigWO9IVsbiLIiEWBILU+HGEzV+6i9CYOEFHMnbfsOiV04RvTt3o9fhh9L1tOPJGTHcOwjb8oTQjqhEI75IaSmrP/2cipmzqFm0iGjpGuKVlcTK1yJdx/tOhCDQpQu+ggJye/cmf9tt6Py7nemy2xgv3W1Zm7QfletSNmUa8x5/AqUkOT17svNtt2St/YByXZxIhNIvvmLNN5Opmj2H8IoVODUhYuXJWRQF/pIScrp3o2DAdpSMHkW/Y47GX7xxY9Ly6d8x+4H/AyEY8efrKBw0qMn9kS4DYAbrT/4ibZvI6tWs/uQzyqZMpXr+AqJlZcTWrkM5Xqoz0K0bgeJicvv2pXjEcHofejBFQ4Zs8vfSJOUV+JFVq1j54ceUT51GaNlyIitXJhr2efPZ+zsV4S8uJn+b/hQOHkTP/SbQeZeRWDk5m5yVULZD9LEncH/+BaXURpeckvcFzj0L38id2zYAIFFLjsdxf/oZe9Jk5MpVqJoaRFERIi8Xo08fjP79sHYYhlHSGdXC0UiV60I0hvPtdOyvJ+POnYdcsRK5arWXSk+c7lUyeAgEMDoXI4o7YfTv5733qJH4dtvVa1tgtqwRWy0pUeEI9mdfYH/+Je78BcgVq5AVFbXndYXX6l2UdMYatD3WbqPxH3MURknn2syMLCsnfNe9qIpKhCHqfaeipIScKy/D6FJS5403UKEwoetuREWjafeh0bOHN8lRcoTQTFOK6PMvErnlr41OoS1KOlMw8RmsYekHEMqGrAcAbiTC9wcfTvTX3wgIA78wWh0AOAJWO5I1cYcl8QjTatailMRIFPa+Bgp+7/VJBAGGl30wDCxh4DMtegUK6ZlfTI/zz6DLRWdhprvethVRymsT4KX3XZDKS30n7heGgRBGoh2G4Z20EyfSdD+0FlMKmUj7CeG9T7a/l3qf23FrL3MkCcPAMM3agrT2JJpC1RnlzEgMmtOU5gYAJAuxxPtIx/G2NbmdSiEMs/YyRnPfP9OU2tAzRDousGE0SFF7mSVxeSDD25c8ZuudQJLXrhJEawu2TEruo8RvijqX2IBN3z6lwHG9wFAqiIRxfp3jnTPz8zEHbZ/IPHjfh5cFSARgm/reSYnPiOuC46BcF3fOXGQ4gtmlC0bfPl73QdPaMKlQ3fdO7qMGvk9hJDIX6ba1zv7dcF/ir0j8nziHpX2NZlLSa/e0kViMquNPw/nhR28/NEQIfOP2oODJR6GFPXI2VXYDAKVY8+HHzDz7fKx4vFUBgAIcBetcRanj8Gu0mgXREJVOHJP6NX4fbKjp1xb+Akt4Bb5pGBuCgMRfQxjkWX665hbSY6eRdD3/NAoP2jerUzB2GHWH8E09TJJRuEikMbOgboHRphKfW9TZBqhzYkq0h2hMS7e9JQFAPcnvqM52ikRB0pztzKZ6+7CB7cvmsbPR8ZoqW+/b3iT2ffK7qC0A8aZX3uh7yNZ+SR4DStVugyJRm6+7pNPA91m77Y2o/dzpNPH85lBlZUT++X9QVITRoztmj+4YffuiwmHi77xH7MVXUGFvSOsGmSaFLzyNOWZ0m3d3zWoAIGNxZl55NWWvvoFPqRYFAOAFrSEJy22XlU6MSTXlhF0bQynMOjX+5HX+ZADgq1P4m8LEShT8lpEs+A2MjdohGBT6c+le2IXuZ55E8WnHY3Xrmn5WJ03LoFYHAJqmbT5K4fwyk+qjjvcCEtP0CrFENkDFvPYu6Wr/wjQxd/kdBS883Whbj2xpIGeROdHSUtZ88rmXDm0BBYSVYIUj+CES4a3K1XxYuZqQE8dUCj8QBALJv0IkFoOgMAgYBgHDJGBa3mJYBBN/A4ZJwDAJGqb3ONPEbxj4hSDmRFm5fhVLHn6cZadeRHTGTGQsMyPkaZqmaVsYV+J89+OGERwjEVQ4gqoJeb0PkgOrpWOaBI44zBskqo0Lf7IdACx95dUWjbOuAAeDCnxUbjOA6UUB3qlZQ7kTxVCSQKLQr10ShX5ACAII/MmC30gp+E1z46X2sd7iMwwsIZBI1oTXs3TG9yz+w1lUPvMyMgv9azVN07QOznVwf2jGcMkNMQxE1y74Djlos2WasxYAyHiclW+/53UXa6aoMllrBCm45HwGv/EsR73/FmOOOZocn4+AEBtq/rU1/jo1f8PwavXJWr9p4U8U/l7t31vvLV7NP2AYiaDBwGd4lwVIXJuqcCLMqVjO8r/dS+lF1+JWeZOnaJqmaRqAclzs71oXAAifj5zrrvJ6MWyG2j9ZCwCUIrRsOdHy8mYVmhKTiC8fY++92falJ+l22Xn4SjrTuV8/znz6aS58/XV2POggCnJzvRo/iZo/IlGTtwiYvtpav1e4mwRra/rJ2r73v194KX+/MPAlJiJOLhsoHOkyr2o1Sz7+hDUXXY+zaGnLB7bQNE3Ttkhy5UpUZWXq3U0zDay9x+Hff0LqmjaVlQBAKUW0tBS7ujp1VQqBFD7soq7kn34yvR/5B7ljRiL8fq9xhGXhCwYZftBBnP7KK/zhscfoPnAgebm5tdfvkwW+v17hn6j5J6/1m16t37vWv+GvmehtkI4CYq7Dgqo1LPrkY1ZfeiNuabk3AI6maZq2VZMLFjbav79BhoHRty+5N1wDWRrbpLmyEgAAVPw2GzfayBSrQmCYOZh9B9Dj4bvoct0liMKC2tHUNjxMeMOY5ucz4vjjOf3zz5jw97/TbfvB5ARzCfoDBExrQ0FvmgTNxOWAZM1fJNoHJAp/K1Hrbw6FwlEus6tLmT31a0rPuQJ7sc4EaJqmbe3cufO9Rn7NSeEbBsLnwxy0PfkP3ovRt2/DYwe0oey8u1Ks/eGntK0fDWHiNwvIHT+e3u88T8643TCaMeOXYVkU9O7Nzhecz7GffcKoq6+iy+DB5PgDBKxkS/+66X6v8PcuF3jdD42NUv1NU4CrFPNqypgz7RvWXn8HqrKp7IamtVBiwCNvoCXRrHOKpmmbj+jVE+t3O2H06gXBgDeQUp3B0YRpevcFAph9ehM49UQKX30ea6cRGwY+2oyyMg6Acl0+3O8gQj//QgDhpd8TrfWDwqRzTgmFZ51MwaVnY+Tntm44zsSIbdG166j44Ud+vfEWnBUrMGVicKA6QwAbiSGFVKIwVwokCglIpXAT/7tKYSuFKyWOkthKYUtJXEls1yEuXVwp2blTH4bsPYGuT/8zO2NIa1sfKVny+n9Z98OPIARFQ4ew7Ql/bPOBQTRNaz7luhCJompqUOEw7qzfkOvXIxcv8Qoaw8TYfgDWkMEYPbtjdC7xRj5sJ9F9VgIA6Ti8NWIk7urSROt8L/2eb/joltuVwnNOJu/SszByczZ5RyTHsHeqqin74EPWvfM+kW+nIyLebIDJV/cK/0QQsAkBQNx18RkWu3cbwKDr/kTB+ad5k3lo2iZQSoHrzY4nhDdASLsYrlbTtMYlR1uUEqHwhuWuU6x6Qw17Qy63qrKbRdkJAGybl3r0xe9K75q8YZBrWGyT24OiS84m9/yTETnBjJ7clFLe1KexGJFZv7Hi1r8Snb8AGYl6UZpSyAwEADHXwVYKn+Xj9z2H0e+1JwnstIMX1WmapmlaB5HxcEQpRbh0Tb0x1A1h0DtYQtH5p5F79vEZL/xJNhb0+TDz88kbNZLt33iJ7Z78FyUnHodVVITwZW4mNKUUYTvOT+tWUPXXB5F6jABN0zStg8lMiViXUthVVbUBgIGgp78TJQcdQO7lZyHaYLY9YZoYOTkUjN+Tvn+7jYGvTaT4qCPwdeuWsSDARTGjupQF30wi+snX3jzxmqZpmtZBZKY0bESRlUP3bn3Ivekyb37pLBf+qYRlkTN0MP3+cQeD33iJnpdfgpGBecdJXEqYUrmStX+7H7lsRepqTdM0TWu3shoA+DDo07kX+XffgNGr++ZpAJGYe9zw+/H370fPyy5i+Mfv0v3M0wj279fqVtbJRoWr7DDLS1cRfuujtN0eNU3TNK29yVqJLBD0DhRRvNce+PbcdfMU/nUlA4FAgJwB29LvxusY/uarlBxyEGZuLqIVszEpwFGSj9YtJvzhF97Uj5qmaZrWAWStVPYbJj1yOxH8w2GIgD919eZlGBjBIP4e3Rn08APs8OKzdDv6CMy8vBa3EVDAWifGgl9nYU+fkbpa0zRN09qllpV2LVBg+MkdNhj/7ru0uGbdVoRhYAT8dNp9N4befw/DH/0/8gcPQlgWLWnTbyvJrIpSwk+/onsDaJqmaR1CVgIAAXT15ZF7yjHgb2e1/zSEZdFlwj6Mfu1FdrjrbwS6lLTossWyaDWRaT8gV63RQYCmaZrW7jW/hGuhbgWdsXYa1nFGyUuMIxDo2pW+J57Anm+9QY/99sUqyG/W1EFrnAiVkRDOvEU6ANA0TdPavayUzkIICnr0aJM+/xmXuCxQMGQwuz3xGLvc/XesvFyEaTZ6WcBWkh+qy3BnL0DJxh6paZqmaZtfxgMAIQS5gVzM7fphbOa5jjeFMAx8hYVse9yxHPD2m/TYYw8M00o7Y6FUMCdSiTNrrs4AaJqmae1exgMAhMDapg/5j/8dUVyUurbDMXw+uuwykoP++xqDTzoBI02bBoliaTxEdM58HQBomqZp7V7mA4BE7VlYVosa0bVnwjAwAwH2vPsuxt99F/6CggYzAVJJ1s1fmHq3pmmaprU72SuhGyggOzJhGPiLihhxxhlM+Od95JZ02SgIkFJRHapB1oR0FkDTNE1r17IXAGyBhBBYOTkMO/54jvzP0+R07lwvCFAoQtJBLlupAwBN0zStXdMBQCv4cnLYbt992femm/Dl5NRmOxQgAbmuwruhaZqmae2UDgBayfD7GXPBBex1xRWYPh8kGgJWunFkabnOAGiapmntmg4AWkkIgenzMf7SS+k/ejRGYnphRWKeYE3TNE1rx3QAsAmEEOR16cJpTz9NQdeutffr4l/TNE1r73QAsImEEHTu359xZ51VmwXQNE3TtPZOBwAZYPn97HrsseQUFKSu0jRN07R2SQcAGdJz8GBGH3lk6t2apmma1i7pACBDfIEAR1xzDabPt9EAQZqmaZrW3ugAIEOEYdCpRw9K+vRJXaVpmqZp7Y4OADLI8vvpsd12GFvIHAiapmnalkuXVBlkmCZ5PbpDoOEZAzVN0zStvRBK6VFrMkZKZGU1IuBH5AS3uAmRNE3TtC2HDgAyTEnpNQLUhb+maZrWjukAQNM0TdO2QroNgKZpmqZthXQAoGmapmlbIR0AaJqmadpWSAcAmqZpmrYV0gGApmmapm2FdACgaZqmaVuh/wfQRsUjBJx5GwAAAABJRU5ErkJggg==';
+const SUPABASE_URL = 'https://yiwlasnckmqodidrfpxn.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_ZFI3RmUPg604G19RtXvkuw_ASo2AbPe';
+const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// URL base onde o assinar.html está hospedado (mesma pasta deste arquivo no GitHub Pages)
+const ASSINAR_BASE_URL = 'https://gwg098-dot.github.io/Termos-Ti/assinar.html';
+
+function coletarDadosTermo() {
+  const isResp  = estado.tipo === 'responsabilidade';
+  const isDev   = estado.tipo === 'devolucao';
+  const isTroca = estado.tipo === 'troca';
+
+  const dados = {
+    tipo: estado.tipo,
+    empresa: estado.empresa,
+    unidade: v('unidade'),
+    chamado: v('chamado'),
+    nome: v('nome'),
+    matricula: v('matricula'),
+    email: v('email'),
+    telefone: v('telefone'),
+    departamento: v('departamento'),
+    cargo: v('cargo'),
+    centrocusto: v('centrocusto'),
+    nomeGestor: v('nome-gestor'),
+    emailGestor: v('email-gestor'),
+    equipamento: {
+      descricao: v('descricao'),
+      modelo: v('modelo'),
+      serie: v('serie'),
+      patrimonio: v('patrimonio'),
+      linhaTelefonica: v('linha-telefonica'),
+      acessorios: v('acessorios')
+    }
+  };
+
+  if (isTroca) {
+    dados.equipamentoDevolvido = {
+      descricao: v('dev-descricao'),
+      modelo: v('dev-modelo'),
+      serie: v('dev-serie'),
+      patrimonio: v('dev-patrimonio'),
+      linhaTelefonica: v('dev-linha-telefonica'),
+      acessorios: v('dev-acessorios')
+    };
+    const condTroca = document.querySelector('input[name="condicao-troca"]:checked')?.value || 'perfeito';
+    dados.condicaoTroca = { valor: condTroca, avarias: v('avarias-troca') };
+  }
+
+  if (isDev) {
+    const cond = document.querySelector('input[name="condicao"]:checked')?.value || 'perfeito';
+    dados.condicao = { valor: cond, avarias: v('avarias') };
+  }
+
+  return dados;
+}
+
+function validarDadosMinimos(dados) {
+  if (!dados.nome) return 'Preencha o nome do colaborador antes de gerar o link.';
+  if (!dados.equipamento.descricao) return 'Selecione o equipamento antes de gerar o link.';
+  return null;
+}
+
+async function gerarLinkRemoto() {
+  const btn = document.getElementById('btn-link-remoto');
+  const dados = coletarDadosTermo();
+
+  const erro = validarDadosMinimos(dados);
+  if (erro) { alert(erro); return; }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Gerando link...';
+
+  try {
+    const { data, error } = await sbClient
+      .from('termos_pendentes')
+      .insert({ dados_json: dados })
+      .select('token')
+      .single();
+
+    if (error) throw error;
+
+    const link = `${ASSINAR_BASE_URL}?token=${data.token}`;
+    document.getElementById('link-remoto-output').value = link;
+    document.getElementById('modal-link-overlay').style.display = 'flex';
+
+  } catch(e) {
+    console.error('Erro ao gerar link remoto:', e);
+    showToast('toast-link-erro');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔗 Gerar Link de Assinatura Remota';
+  }
+}
+
+function copiarLinkRemoto() {
+  const input = document.getElementById('link-remoto-output');
+  input.select();
+  navigator.clipboard.writeText(input.value).then(() => {
+    const btn = event.target;
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copiado!';
+    setTimeout(() => { btn.textContent = orig; }, 1500);
+  });
+}
+
+// ─── TERMOS PENDENTES: listar e carregar de volta ────────────
+
+const STATUS_LABEL = {
+  pendente: 'Aguardando assinatura',
+  assinado: 'Assinado — pronto para gerar PDF',
+  expirado: 'Expirado',
+  cancelado: 'Cancelado'
+};
+const STATUS_COLOR = {
+  pendente: '#b45309',
+  assinado: '#16a34a',
+  expirado: '#888',
+  cancelado: '#cc0000'
+};
+
+function fmtData(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+
+async function abrirPainelPendentes() {
+  document.getElementById('modal-pendentes-overlay').style.display = 'flex';
+  const lista = document.getElementById('lista-pendentes');
+  lista.innerHTML = '<div style="text-align:center; color:#888; padding:30px 0;">Carregando...</div>';
+
+  const { data, error } = await sbClient
+    .from('termos_pendentes')
+    .select('id, token, dados_json, status, created_at, nome_assinante, expires_at')
+    .neq('status', 'assinado')
+    .neq('status', 'cancelado')
+    .neq('status', 'expirado')
+    .order('created_at', { ascending: false })
+    .limit(40);
+
+  if (error) {
+    console.error(error);
+    lista.innerHTML = '<div style="text-align:center; color:#cc0000; padding:30px 0;">Erro ao carregar termos.</div>';
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    lista.innerHTML = '<div style="text-align:center; color:#888; padding:30px 0;">Nenhum termo aguardando assinatura.</div>';
+    return;
+  }
+
+  lista.innerHTML = data.map(row => {
+    const expirado = row.status === 'pendente' && new Date(row.expires_at) < new Date();
+    const status = expirado ? 'expirado' : row.status;
+    const nome = (row.dados_json && row.dados_json.nome) || '(sem nome)';
+    const tipo = TIPO_LABEL_FORM[row.dados_json?.tipo] || row.dados_json?.tipo || '';
+    const podeCarregar = row.status === 'assinado';
+
+    return `
+      <div style="border:1px solid #e0e0e0; border-radius:10px; padding:14px 16px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; gap:12px;">
+        <div style="min-width:0;">
+          <div style="font-weight:500; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(nome)}</div>
+          <div style="font-size:12px; color:#888; margin-top:2px;">${escHtml(tipo)} · ${fmtData(row.created_at)}</div>
+          <div style="font-size:12px; color:${STATUS_COLOR[status] || '#888'}; margin-top:4px; font-weight:500;">● ${STATUS_LABEL[status] || status}</div>
+        </div>
+        ${podeCarregar
+          ? `<button onclick="carregarTermo('${row.id}')" style="background:#6b46c1; color:#fff; border:none; border-radius:8px; padding:9px 14px; font-size:13px; font-weight:500; cursor:pointer; white-space:nowrap;">Carregar</button>`
+          : ''
+        }
+        <button onclick="cancelarTermo('${row.id}', this)" style="background:none; border:1px solid #e0e0e0; border-radius:8px; padding:9px 14px; font-size:13px; color:#888; cursor:pointer; white-space:nowrap;">Cancelar</button>
+      </div>`;
+  }).join('');
+}
+
+const TIPO_LABEL_FORM = {
+  responsabilidade: 'Responsabilidade',
+  devolucao: 'Devolução',
+  troca: 'Troca'
+};
+
+function escHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = String(str || '');
+  return d.innerHTML;
+}
+
+function setVal(id, val) {
+  const elm = document.getElementById(id);
+  if (elm) elm.value = val || '';
+}
+
+async function cancelarTermo(rowId, btn) {
+  if (!confirm('Cancelar este termo? O link de assinatura remota vai parar de funcionar.')) return;
+  btn.disabled = true;
+  btn.textContent = '...';
+  const { error } = await sbClient
+    .from('termos_pendentes')
+    .update({ status: 'cancelado' })
+    .eq('id', rowId);
+  if (error) {
+    console.error(error);
+    btn.disabled = false;
+    btn.textContent = 'Cancelar';
+    alert('Erro ao cancelar. Tente novamente.');
+    return;
+  }
+  // Remove a linha do painel visualmente
+  btn.closest('div[style]').remove();
+}
+
+async function carregarTermo(rowId) {
+  const { data, error } = await sbClient
+    .from('termos_pendentes')
+    .select('dados_json, assinatura_colaborador, nome_assinante')
+    .eq('id', rowId)
+    .single();
+
+  if (error || !data) {
+    console.error(error);
+    alert('Não foi possível carregar este termo.');
+    return;
+  }
+
+  popularFormulario(data.dados_json, data.assinatura_colaborador, data.nome_assinante);
+  document.getElementById('modal-pendentes-overlay').style.display = 'none';
+  showToast('toast-carregado');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function popularFormulario(dados, assinaturaDataUrl, nomeAssinante) {
+  // Tipo do termo
+  setTipo(dados.tipo);
+
+  // Vínculo / empresa
+  const ehPardini = MARCAS_PARDINI.includes(dados.empresa);
+  setVinculo(ehPardini ? 'pardini' : 'fleury');
+  selectEmpresa(dados.empresa);
+
+  // Dados do colaborador
+  setVal('unidade', dados.unidade);
+  setVal('chamado', dados.chamado);
+  setVal('nome', dados.nome);
+  setVal('matricula', dados.matricula);
+  setVal('email', dados.email);
+  setVal('telefone', dados.telefone);
+  setVal('departamento', dados.departamento);
+  setVal('cargo', dados.cargo);
+  setVal('centrocusto', dados.centrocusto);
+  setVal('nome-gestor', dados.nomeGestor);
+  setVal('email-gestor', dados.emailGestor);
+
+  // Equipamento principal
+  if (dados.equipamento?.descricao) setEquipamento(dados.equipamento.descricao);
+  setVal('modelo', dados.equipamento?.modelo);
+  setVal('serie', dados.equipamento?.serie);
+  setVal('patrimonio', dados.equipamento?.patrimonio);
+  setVal('linha-telefonica', dados.equipamento?.linhaTelefonica);
+  setVal('acessorios', dados.equipamento?.acessorios);
+
+  // Troca: equipamento devolvido
+  if (dados.tipo === 'troca' && dados.equipamentoDevolvido) {
+    if (dados.equipamentoDevolvido.descricao) setEquipamentoDev(dados.equipamentoDevolvido.descricao);
+    setVal('dev-modelo', dados.equipamentoDevolvido.modelo);
+    setVal('dev-serie', dados.equipamentoDevolvido.serie);
+    setVal('dev-patrimonio', dados.equipamentoDevolvido.patrimonio);
+    setVal('dev-linha-telefonica', dados.equipamentoDevolvido.linhaTelefonica);
+    setVal('dev-acessorios', dados.equipamentoDevolvido.acessorios);
+  }
+
+  // Condição (devolução ou troca)
+  const condicao = dados.tipo === 'troca' ? dados.condicaoTroca : (dados.tipo === 'devolucao' ? dados.condicao : null);
+  if (condicao) {
+    const radioName = dados.tipo === 'troca' ? 'condicao-troca' : 'condicao';
+    const radio = document.querySelector(`input[name="${radioName}"][value="${condicao.valor}"]`);
+    if (radio) {
+      radio.checked = true;
+      if (radioName === 'condicao') toggleAvarias(); else toggleAvariasTroca();
+    }
+    if (condicao.avarias) {
+      setVal(dados.tipo === 'troca' ? 'avarias-troca' : 'avarias', condicao.avarias);
+    }
+  }
+
+  atualizarCaixaLeitura();
+
+  // Assinatura do colaborador (desenha a imagem recebida no canvas)
+  if (assinaturaDataUrl) {
+    const canvas = document.getElementById('sig-colaborador');
+    const wrap = document.getElementById('wrap-colaborador');
+    const img = new Image();
+    img.onload = () => {
+      sigCtx['colaborador'].clearRect(0, 0, canvas.width, canvas.height);
+      sigCtx['colaborador'].drawImage(img, 0, 0, canvas.width, canvas.height);
+      sigState['colaborador'] = true;
+      wrap.querySelector('.sig-placeholder').classList.add('hidden');
+    };
+    img.src = assinaturaDataUrl;
+  }
+
+  // Nome do colaborador assinante remoto, se vier preenchido e o campo nome local estiver vazio
+  if (nomeAssinante && !v('nome')) setVal('nome', nomeAssinante);
+}
+
+// ─── REALTIME: auto-carrega quando o colaborador assina ──────
+
+sbClient
+  .channel('termos-realtime')
+  .on('postgres_changes',
+    { event: 'UPDATE', schema: 'public', table: 'termos_pendentes' },
+    (payload) => {
+      const row = payload.new;
+      if (!row || row.status !== 'assinado') return;
+
+      popularFormulario(row.dados_json, row.assinatura_colaborador, row.nome_assinante);
+
+      const nome = (row.dados_json && row.dados_json.nome) || 'colaborador';
+      const banner = document.getElementById('banner-realtime');
+      document.getElementById('banner-realtime-texto').textContent =
+        `✓ ${nome} assinou remotamente — dados carregados automaticamente. Confira e clique em "Gerar PDF".`;
+      banner.style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  )
+  .subscribe((status) => {
+    if (status === 'SUBSCRIBED') console.log('Realtime conectado: aguardando assinaturas remotas.');
+  });
+
+function showToast(id) {
+  const tid = id || 'toast';
+  const t = document.getElementById(tid);
+  if (!t) return;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+const POWER_AUTOMATE_URL = 'https://defaulte0b90a4bc4ab46c68c8f98d332fc2d.b0.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/6e60ee1b84114eff9f40536ca1a8e6e2/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=xjUUX14FYDSml5X12nhdCR4klg1dS5fqKn1JGAnpeHk';
+
+function _gerarPDFBlob() {
+  const orig = jsPDF.prototype.save;
+  let captured = null;
+  jsPDF.prototype.save = function() { captured = this.output('blob'); };
+  try { _gerarPDF(); } catch(e) { console.error(e); }
+  jsPDF.prototype.save = orig;
+  return captured;
+}
+
+async function gerarESalvarOneDrive() {
+  const btn = document.getElementById('btn-onedrive');
+  btn.disabled = true;
+  btn.textContent = '⏳ Salvando...';
+
+  try {
+    const pdfBlob = _gerarPDFBlob();
+    if (!pdfBlob) throw new Error('PDF não gerado');
+
+    const reader = new FileReader();
+    reader.onloadend = async function() {
+      const base64 = reader.result.split(',')[1];
+
+      const isResp  = estado.tipo === 'responsabilidade';
+      const isTroca = estado.tipo === 'troca';
+      const tipoLabel = isResp ? 'Responsabilidade' : isTroca ? 'Troca' : 'Devolucao';
+
+      const equip = v('descricao') || 'Notebook';
+      const nomeSlug = (v('nome') || 'sem_nome').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+      const matSlug  = (v('matricula') || 'sem_matricula').replace(/[^a-zA-Z0-9]/g, '');
+      const deptSlug = (v('departamento') || 'sem_depto').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+      const filename = nomeSlug + '_' + matSlug + '_' + deptSlug + '_' + tipoLabel + '.pdf';
+
+      const payload = {
+        filename: filename,
+        tipo: tipoLabel,
+        equipamento: equip,
+        numero_serie: v('serie') || v('dev-serie') || '',
+        patrimonio_imei: v('patrimonio') || v('dev-patrimonio') || '',
+        pdf_base64: base64,
+        nome_colaborador: v('nome') || '',
+        matricula: v('matricula') || '',
+        unidade: v('unidade') || '',
+        empresa: estado.empresa || '',
+        nome_gestor: v('nome-gestor') || '',
+        email_gestor: v('email-gestor') || '',
+        email_colaborador: v('email') || '',
+        chamado: v('chamado') || ''
+      };
+
+      try {
+        const resp = await fetch(POWER_AUTOMATE_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (resp.ok || resp.status === 202) {
+          showToast('toast-onedrive');
+        } else {
+          const err = await resp.text();
+          console.error('Power Automate erro:', resp.status, err);
+          showToast('toast-onedrive-erro');
+        }
+      } catch(e) {
+        console.error('Fetch erro:', e);
+        showToast('toast-onedrive-erro');
+      }
+
+      btn.disabled = false;
+      btn.textContent = '☁ Gerar PDF e Salvar no OneDrive';
+    };
+    reader.readAsDataURL(pdfBlob);
+
+  } catch(e) {
+    console.error(e);
+    showToast('toast-onedrive-erro');
+    btn.disabled = false;
+    btn.textContent = '☁ Gerar PDF e Salvar no OneDrive';
+  }
+}
+
+
+
+function gerarPDF() {
+  const btn = document.getElementById('btn-gerar');
+  btn.disabled = true;
+  btn.textContent = '⏳ Gerando...';
+
+  setTimeout(() => {
+    try { _gerarPDF(); } catch(e) { console.error(e); }
+    btn.disabled = false;
+    btn.textContent = '⬇ Gerar PDF';
+  }, 80);
+}
+
+function _gerarPDFBlob() {
+  try {
+    console.log('Iniciando _gerarPDF(true)...');
+    const doc = _gerarPDF(true);
+    console.log('doc retornado:', doc);
+    if (!doc) { console.error('doc retornou null/undefined'); return null; }
+    console.log('Gerando arraybuffer...');
+    const arrayBuf = doc.output('arraybuffer');
+    console.log('Blob sendo criado, tamanho:', arrayBuf.byteLength);
+    return new Blob([arrayBuf], { type: 'application/pdf' });
+  } catch(e) {
+    console.error('_gerarPDFBlob ERRO DETALHADO:', e.message, e.stack);
+    return null;
+  }
+}
+
+function _gerarPDF(returnDoc = false) {
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const isResp  = estado.tipo === 'responsabilidade';
+  const isTroca = estado.tipo === 'troca';
+
+  const PW = 210, PH = 297;
+  const ML = 20, MR = 20, MT = 20;
+  const CW = PW - ML - MR; // 170mm
+  let y = MT;
+
+  // Helpers
+  const hex2rgb = h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
+
+  function setFont(size, style='normal', color=[30,30,30]) {
+    doc.setFontSize(size);
+    doc.setFont('helvetica', style);
+    doc.setTextColor(...color);
+  }
+
+  function drawRect(x, yw, w, h, fill=[240,242,248], stroke=[180,185,205]) {
+    doc.setFillColor(...fill);
+    doc.setDrawColor(...stroke);
+    doc.rect(x, yw, w, h, 'FD');
+  }
+
+  function line(x1, yw, x2, color=[180,185,205], lw=0.3) {
+    doc.setDrawColor(...color);
+    doc.setLineWidth(lw);
+    doc.line(x1, yw, x2, yw);
+  }
+
+  function fieldRow(label, value, x, yw, w, labelW=28) {
+    setFont(7, 'bold', [90,100,130]);
+    doc.text(s(label.toUpperCase()), x+3, yw+4.5);
+    setFont(8.5, 'normal', [20,20,40]);
+    const maxW = w - labelW - 5;
+    let val = s(value || '—');
+    // Truncate to fit in one line
+    while (val.length > 1 && doc.getTextWidth(val) > maxW) {
+      val = val.slice(0, -1);
+    }
+    if (val !== s(value || '—')) val = val.slice(0, -1) + '...';
+    doc.text(val, x+labelW+2, yw+4.5);
+    doc.setDrawColor(200,205,220);
+    doc.setLineWidth(0.2);
+    doc.line(x, yw+7, x+w, yw+7);
+  }
+
+  // ─── CABEÇALHO: logo Grupo Fleury ────────────────────────────
+  // Logo: 512x159px → proporção 3.22. Largura fixa 48mm → altura 14.9mm
+  const logoW = 48, logoH = Math.round((159 / 512) * 48 * 10) / 10;
+  const logoX = (PW - logoW) / 2; // centralizado
+  try { doc.addImage(LOGO_FLEURY_B64, 'PNG', logoX, 5, logoW, logoH); } catch(e) {}
+
+  y = 5 + logoH + 7;
+
+  // Título principal
+  const titulo = isResp  ? 'TERMO DE RESPONSABILIDADE E RECEBIMENTO DE EQUIPAMENTO'
+              : isTroca ? 'TERMO DE TROCA DE EQUIPAMENTO'
+              :            'TERMO DE DEVOLUÇÃO DE EQUIPAMENTO';
+
+  setFont(12, 'bold', [20, 20, 20]);
+  doc.text(s(titulo), ML, y + 8);
+  line(ML, y + 11, PW - MR, [180,180,180], 0.3);
+
+  y += 12;
+
+  // Nº Chamado
+  setFont(8, 'bold', [90,100,130]);
+  doc.text(s('Nº CHAMADO:'), ML, y + 4);
+  setFont(9, 'bold', [15,30,80]);
+  doc.text(s(v('chamado') || '_______________________'), ML + 28, y + 4);
+  line(ML, y + 6.5, PW - MR);
+  y += 8;
+
+  // ─── DADOS DA EMPRESA ────────────────────────────────────────
+  drawRect(ML, y, CW, 7, [220,228,245], [160,170,210]);
+  setFont(7.5, 'bold', [15,30,80]);
+  doc.text(s('DADOS DA EMPRESA'), ML + 3, y + 5);
+  y += 7;
+
+  // Linha 1: Vínculo + Marca
+  const vinculoLabel = vinculoAtual === 'pardini' ? 'Pardini' : 'Fleury';
+  drawRect(ML, y, CW/3 - 1, 7, [248,249,253], [210,215,230]);
+  setFont(7, 'bold', [90,100,130]);
+  doc.text(s('VÍNCULO:'), ML + 3, y + 5.2);
+  setFont(8, 'normal', [20,20,40]);
+  doc.text(s(vinculoLabel), ML + 22, y + 5.2);
+
+  drawRect(ML + CW/3 + 1, y, CW/3 - 1, 7, [248,249,253], [210,215,230]);
+  setFont(7, 'bold', [90,100,130]);
+  doc.text(s('MARCA:'), ML + CW/3 + 4, y + 5.2);
+  setFont(8, 'normal', [20,20,40]);
+  doc.text(s(estado.empresa), ML + CW/3 + 22, y + 5.2);
+
+  drawRect(ML + 2*CW/3 + 2, y, CW/3 - 2, 7, [248,249,253], [210,215,230]);
+  setFont(7, 'bold', [90,100,130]);
+  doc.text(s('UNIDADE:'), ML + 2*CW/3 + 5, y + 5.2);
+  setFont(8, 'normal', [20,20,40]);
+  doc.text(s(v('unidade') || ''), ML + 2*CW/3 + 26, y + 5.2, { maxWidth: CW/3 - 30 });
+  y += 8;
+
+  // ─── DADOS DO COLABORADOR ────────────────────────────────────
+  // DADOS DO COLABORADOR
+  drawRect(ML, y, CW, 7, [220,228,245], [160,170,210]);
+  setFont(7.5, 'bold', [15,30,80]);
+  doc.text(s('DADOS DO COLABORADOR'), ML + 3, y + 5);
+  y += 7;
+
+  const halfW = CW / 2 - 1;
+
+  // nome / matricula
+  drawRect(ML, y, halfW, 7, [248,249,253], [210,215,230]);
+  drawRect(ML + halfW + 2, y, halfW, 7, [248,249,253], [210,215,230]);
+  fieldRow('Nome', v('nome'), ML, y, halfW);
+  fieldRow('Matricula', v('matricula'), ML + halfW + 2, y, halfW);
+  y += 8;
+
+  // email / telefone
+  drawRect(ML, y, halfW, 7, [248,249,253], [210,215,230]);
+  drawRect(ML + halfW + 2, y, halfW, 7, [248,249,253], [210,215,230]);
+  fieldRow(estado.tipo === 'devolucao' ? 'E-mail Pessoal' : 'E-mail', v('email'), ML, y, halfW);
+  fieldRow('Telefone', v('telefone'), ML + halfW + 2, y, halfW);
+  y += 7;
+
+  // DADOS DA AREA
+  drawRect(ML, y, CW, 7, [220,228,245], [160,170,210]);
+  setFont(7.5, 'bold', [15,30,80]);
+  doc.text(s('DADOS DA AREA'), ML + 3, y + 5);
+  y += 7;
+
+  // departamento / cargo
+  drawRect(ML, y, halfW, 7, [248,249,253], [210,215,230]);
+  drawRect(ML + halfW + 2, y, halfW, 7, [248,249,253], [210,215,230]);
+  fieldRow('Departamento', v('departamento'), ML, y, halfW);
+  fieldRow('Cargo', v('cargo'), ML + halfW + 2, y, halfW);
+  y += 7;
+
+  // centro de custo (full width)
+  drawRect(ML, y, CW, 7, [248,249,253], [210,215,230]);
+  fieldRow('Centro de Custo', v('centrocusto'), ML, y, CW, 45);
+  y += 7;
+
+  if (v('nome-gestor') || v('email-gestor')) {
+    drawRect(ML, y, halfW, 7, [248,249,253], [210,215,230]);
+    drawRect(ML + halfW + 2, y, halfW, 7, [248,249,253], [210,215,230]);
+    fieldRow('Nome do Gestor', v('nome-gestor'), ML, y, halfW);
+    fieldRow('E-mail do Gestor', v('email-gestor'), ML + halfW + 2, y, halfW);
+    y += 7;
+  }
+
+  // ─── IDENTIFICAÇÃO DO EQUIPAMENTO (oculto na Troca) ─────────
+  const equipPdf = v('descricao');
+  const isMobilePdf = ['Smartphone', 'iPhone', 'Tablet'].includes(equipPdf);
+
+  if (!isTroca) {
+    drawRect(ML, y, CW, 7, [220,228,245], [160,170,210]);
+    setFont(7.5, 'bold', [15,30,80]);
+    doc.text(s('IDENTIFICAÇÃO DO EQUIPAMENTO'), ML + 3, y + 5);
+    y += 7;
+
+    const rows = [
+      ['Descrição', equipPdf],
+      ['Marca / Modelo', v('modelo')],
+      ['Número de Série', v('serie')],
+      [document.getElementById('label-patrimonio').textContent, v('patrimonio')],
+      ...(isMobilePdf && v('linha-telefonica') ? [['Linha Telefônica', v('linha-telefonica')]] : []),
+      ['Acessórios', v('acessorios')],
+    ];
+
+    rows.forEach(([lbl, val]) => {
+      drawRect(ML, y, CW, 7, [248,249,253], [210,215,230]);
+      fieldRow(lbl, val, ML, y, CW, 45);
+      y += 8;
+    });
+
+    y += 2;
+  }
+
+  // ─── CONTEÚDO ESPECÍFICO ─────────────────────────────────────
+  if (isResp) {
+    // Detecta tipo de equipamento
+    const equipAtual = v('descricao');
+    const isMobile = ['Smartphone', 'iPhone'].includes(equipAtual);
+
+    // Textos por tipo
+    const textoNota    = isMobile ? 'Declaracao de Responsabilidade pelo Uso de Dispositivo Movel' : 'Declaracao de Responsabilidade';
+    const textoIntro   = isMobile
+      ? 'Declaro que recebi do Grupo Fleury o aparelho celular (smartphone/iPhone) descrito neste documento, em perfeitas condicoes de uso, juntamente com seus acessorios e linha telefonica vinculada (quando aplicavel). Comprometo-me a utilizar o dispositivo de forma responsavel e em conformidade com as politicas corporativas, assumindo plena responsabilidade por sua guarda, uso e devolucao nas mesmas condicoes em que foi recebido. Declaro ainda estar ciente e de acordo com as seguintes obrigacoes:'
+      : 'Declaro, para os devidos fins, que recebi do Grupo Fleury os equipamentos descritos neste documento, em perfeitas condicoes de uso e funcionamento, juntamente com todos os seus acessorios e componentes. Comprometo-me a zelar pela guarda, conservacao e correto uso do(s) equipamento(s), assumindo integral responsabilidade pela sua utilizacao, bem como pela sua devolucao nas mesmas condicoes em que foram recebidos, incluindo todos os componentes, sempre que solicitado pelo Grupo Fleury. Adicionalmente, declaro estar ciente e de acordo com as seguintes obrigacoes:';
+
+    const itensNota = isMobile ? [
+      'Utilizar o aparelho de forma adequada, zelando por sua integridade e conservacao;',
+      'Nao emprestar, ceder ou permitir o uso do dispositivo a terceiros sem autorizacao do Grupo Fleury;',
+      'Ciente de que e expressamente proibida a realizacao de qualquer modificacao fisica no equipamento, incluindo a aplicacao de adesivos, etiquetas ou quaisquer materiais similares.',
+      'Registrar boletim de ocorrencia junto a autoridade policial em caso de roubo ou furto do aparelho e/ou acessorios e solicitar a area de TI o bloqueio do aparelho e/ou linha, por meio de chamado;',
+      'Assumir custos de reparo em caso de danos fisicos decorrentes de uso inadequado;',
+      'Devolver o aparelho formatado, desbloqueado e com todos os acessorios ao tecnico de TI ou gestor imediato em caso de desligamento ou solicitacao da empresa;',
+      'Autorizar o desconto em folha de pagamento do valor correspondente ao aparelho em caso de nao devolucao;',
+      'Autorizar o recolhimento do dispositivo em caso de nao conformidade com as politicas corporativas;'
+    ] : [
+      'Utilizar o equipamento exclusivamente para fins profissionais, observando as politicas internas do Grupo Fleury;',
+      'Empregar todo o cuidado e diligencia necessarios a preservacao da integridade fisica e logica do equipamento;',
+      'Ciente de que e expressamente proibida a realizacao de qualquer modificacao fisica no equipamento, incluindo a aplicacao de adesivos, etiquetas ou quaisquer materiais similares.',
+      'Registrar boletim de ocorrencia junto a autoridade policial em caso de perda, roubo ou furto do aparelho e/ou acessorios e informar a area de TI por meio de chamado;',
+      'Nao emprestar, ceder ou permitir o uso do equipamento por terceiros, salvo mediante autorizacao formal do Grupo Fleury;',
+      'Responsabilizar-me por custos de reparo decorrentes de danos ocasionados por uso inadequado ou em desacordo com as orientacoes corporativas;',
+      'Devolver o equipamento, em caso de desligamento ou solicitacao da empresa, acompanhado de todos os seus acessorios, ao tecnico de TI ou gestor imediato;',
+      'Autorizar o recolhimento do equipamento em caso de descumprimento das politicas internas do Grupo Fleury;',
+      'Autorizar o desconto em folha de pagamento do valor correspondente ao equipamento e/ou acessorios, na hipotese de nao devolucao;'
+    ];
+
+    // Calcula altura dinâmica do bloco — fonte compacta para caber em 1 página
+    const lineH = 3.0;
+    const fSz   = 6.2;
+    doc.setFontSize(fSz);
+    const introLines = doc.splitTextToSize(s(textoIntro), CW - 8);
+    const introH = introLines.length * lineH;
+
+    // Pré-calcula linhas de cada item
+    const itensLinhas = itensNota.map(item => doc.splitTextToSize(s('• ' + item), CW - 14));
+    const itensH = itensLinhas.reduce((acc, il) => acc + il.length * lineH + 0.4, 0);
+    const totalH = 4 + introH + 2 + itensH + 2;
+
+    // Título
+    drawRect(ML, y, CW, 5.5, [220,228,245], [160,170,210]);
+    setFont(6.5, 'bold', [15,30,80]);
+    doc.text(s('RESPONSABILIDADES DO COLABORADOR'), ML + 3, y + 4);
+    y += 5.5;
+
+    // Subtítulo (apenas mobile)
+    if (isMobile) {
+      setFont(6.5, 'bold', [15,30,80]);
+      doc.text(s(textoNota), ML, y + 3.5);
+      y += 4.5;
+    }
+
+    // Corpo
+    drawRect(ML, y, CW, totalH, [248,249,253], [210,215,230]);
+    setFont(fSz, 'normal', [30,35,60]);
+    doc.text(s(introLines), ML + 4, y + 4);
+    let yItem = y + 4 + introH + 1.5;
+
+    itensLinhas.forEach(il => {
+      doc.text(s(il), ML + 6, yItem);
+      yItem += il.length * lineH + 0.4;
+    });
+
+    y += totalH + 2;
+
+  } else if (isTroca) {
+    // ─── TROCA ────────────────────────────────────────────────
+    const equip = v('descricao');
+    const isMobTroca = ['Smartphone', 'iPhone'].includes(equip);
+
+    // Monta intro dinâmico com os equipamentos selecionados
+    const equipRec = v('descricao') || '';
+    const equipDev = v('dev-descricao') || '';
+    const equipsMencionados = [...new Set([equipDev, equipRec].filter(Boolean))];
+    const equipsStr = equipsMencionados.length > 1
+      ? equipsMencionados.slice(0, -1).join(', ') + ' e ' + equipsMencionados.slice(-1)
+      : equipsMencionados[0] || 'equipamento corporativo';
+    const introTroca = 'Ao receber o ' + equipsStr + ', o colaborador compromete-se a observar rigorosamente as disposicoes a seguir:';
+
+    const itensTroca = [
+      '1. Conservacao e uso adequado — Empregar, na utilizacao dos equipamentos, acessorios e componentes, toda a diligencia necessaria a sua correta conservacao e operacao.',
+      '2. Vedacao a transferencia a terceiros — Abster-se de emprestar, ceder, transferir ou disponibilizar os equipamentos ou seus componentes a terceiros, salvo mediante autorizacao expressa da empresa.',
+      '3. Comunicacao imediata a TI — Comunicar imediatamente a area de TI, pelos canais oficiais, qualquer ocorrencia de perda, roubo, furto, extravio ou dano aos equipamentos.',
+      '4. Registro de Boletim de Ocorrencia — Em caso de roubo ou furto, registrar Boletim de Ocorrencia junto a autoridade competente e encaminhar copia a TI tao logo disponivel.',
+      '5. Medidas de seguranca da informacao — Informar prontamente a TI sobre perda, roubo ou furto para que sejam adotadas as providencias cabiveis, incluindo bloqueio, rastreamento e remocao de acessos corporativos.',
+      '6. Responsabilidade por danos por mau uso — Responsabilizar-se pelos custos de reparo decorrentes de danos fisicos causados por mau uso, negligencia ou utilizacao inadequada, conforme avaliacao da empresa.',
+      '7. Devolucao em perfeitas condicoes — Devolver os equipamentos em perfeitas condicoes de uso, acompanhados de todos os acessorios fornecidos (carregadores, fontes, cabos, adaptadores, mochilas, cases etc.), sempre que solicitado pela empresa.',
+      '8. Desbloqueio antes da devolucao — No caso de notebooks, MacBooks, smartphones, iPhones e tablets, realizar o desbloqueio dos dispositivos e fornecer as informacoes necessarias a remocao de contas pessoais e bloqueios de ativacao previamente a devolucao.',
+      '9. Autorizacao para desconto — Autorizar o desconto em folha de pagamento ou em verbas rescisórias, observadas a legislacao vigente e as politicas internas, do valor correspondente aos equipamentos nao devolvidos, perdidos ou danificados por comprovada negligencia.',
+      '10. Recolhimento em caso de descumprimento — Autorizar o recolhimento dos equipamentos pela empresa em caso de descumprimento das politicas internas, normas de seguranca da informacao ou demais procedimentos corporativos.',
+      '11. Manutencao da seguranca dos ativos — Manter os equipamentos sempre atualizados, protegidos por senha e em conformidade com as politicas de seguranca da informacao, privacidade e protecao de dados da empresa.',
+      '12. Sigilo e integridade das informacoes — Zelar pela confidencialidade das informacoes corporativas acessadas ou armazenadas nos equipamentos, comprometendo-se a nao instalar softwares nao autorizados nem realizar alteracoes que comprometam a seguranca dos ativos.',
+      'Declaracao final — O colaborador declara que, nesta data, esta devolvendo o(s) ativo(s) anteriormente sob sua responsabilidade e recebendo novo(s) ativo(s), assumindo integralmente a guarda, a conservacao e a responsabilidade pelo(s) equipamento(s) ora entregue(s) pela empresa.',
+    ];
+
+    // Equipamento devolvido
+    drawRect(ML, y, CW, 5, [220,228,245], [160,170,210]);
+    setFont(6.5, 'bold', [15,30,80]);
+    doc.text(s('EQUIPAMENTO DEVOLVIDO'), ML + 3, y + 3.5);
+    y += 5;
+
+    const devRows = [
+      ['Descrição', v('dev-descricao') || equip],
+      ['Marca / Modelo', v('dev-modelo')],
+      ['Número de Série', v('dev-serie')],
+      [document.getElementById('label-dev-patrimonio').textContent, v('dev-patrimonio')],
+      ...(v('dev-linha-telefonica') ? [['Linha Telefônica', v('dev-linha-telefonica')]] : []),
+    ];
+    devRows.forEach(([lbl, val]) => {
+      drawRect(ML, y, CW, 6, [248,249,253], [210,215,230]);
+      fieldRow(lbl, val, ML, y, CW, 45);
+      y += 6.5;
+    });
+    y += 1;
+
+    // Equipamento Recebido
+    drawRect(ML, y, CW, 5, [220,228,245], [160,170,210]);
+    setFont(6.5, 'bold', [15,30,80]);
+    doc.text(s('EQUIPAMENTO RECEBIDO'), ML + 3, y + 3.5);
+    y += 5;
+
+    const recRows = [
+      ['Descrição', equip],
+      ['Marca / Modelo', v('modelo')],
+      ['Número de Série', v('serie')],
+      [document.getElementById('label-patrimonio').textContent, v('patrimonio')],
+      ...(v('linha-telefonica') ? [['Linha Telefônica', v('linha-telefonica')]] : []),
+      ...(v('acessorios') ? [['Acessórios', v('acessorios')]] : []),
+    ];
+    recRows.forEach(([lbl, val]) => {
+      drawRect(ML, y, CW, 6, [248,249,253], [210,215,230]);
+      fieldRow(lbl, val, ML, y, CW, 45);
+      y += 6.5;
+    });
+    y += 1;
+
+    // Obrigações — duas colunas para caber em 1 página
+    const lhT = 2.5, fSzT = 5.4;
+    doc.setFontSize(fSzT);
+    const colW = (CW - 4) / 2;
+
+    // Dividir itens em 2 colunas
+    const metade = Math.ceil(itensTroca.length / 2);
+    const col1 = itensTroca.slice(0, metade);
+    const col2 = itensTroca.slice(metade);
+
+    const introLinesT = doc.splitTextToSize(s(introTroca), CW - 6);
+    const introHT = introLinesT.length * lhT;
+
+    const col1Linhas = col1.map(item => doc.splitTextToSize(s(item), colW - 6));
+    const col2Linhas = col2.map(item => doc.splitTextToSize(s(item), colW - 6));
+
+    const col1H = col1Linhas.reduce((a, il) => a + il.length * lhT + 0.3, 0);
+    const col2H = col2Linhas.reduce((a, il) => a + il.length * lhT + 0.3, 0);
+    const colsH = Math.max(col1H, col2H);
+    const totalHT = 3 + introHT + 2 + colsH + 2;
+
+    drawRect(ML, y, CW, 5, [220,228,245], [160,170,210]);
+    setFont(6, 'bold', [15,30,80]);
+    doc.text(s('OBRIGAÇÕES DO COLABORADOR'), ML + 3, y + 3.5);
+    y += 5;
+
+    drawRect(ML, y, CW, totalHT, [248,249,253], [210,215,230]);
+    setFont(fSzT, 'normal', [30,35,60]);
+    doc.text(s(introLinesT), ML + 3, y + 3);
+
+    let yC1 = y + 3 + introHT + 1.5;
+    let yC2 = yC1;
+    const x2col = ML + colW + 4;
+
+    col1Linhas.forEach(il => {
+      doc.text(s(il), ML + 3, yC1);
+      yC1 += il.length * lhT + 0.3;
+    });
+    col2Linhas.forEach(il => {
+      doc.text(s(il), x2col, yC2);
+      yC2 += il.length * lhT + 0.3;
+    });
+
+    y += totalHT + 1;
+
+  } else {
+    // CONDIÇÃO DO EQUIPAMENTO
+    drawRect(ML, y, CW, 7, [220,228,245], [160,170,210]);
+    setFont(7.5, 'bold', [15,30,80]);
+    doc.text(s('CONDIÇÕES DO EQUIPAMENTO NO ATO DA DEVOLUÇÃO'), ML + 3, y + 5);
+    y += 7;
+
+    const condicao = document.querySelector('input[name="condicao"]:checked')?.value || 'perfeito';
+    const avariasText = v('avarias');
+
+    drawRect(ML, y, CW, condicao === 'avarias' && avariasText ? 22 : 12, [248,249,253], [210,215,230]);
+
+    setFont(8.5, 'normal', [20,20,40]);
+    const ckP = condicao === 'perfeito' ? '☑' : '☐';
+    const ckA = condicao === 'avarias'  ? '☑' : '☐';
+    doc.text(s(ckP + ' Em perfeito estado de funcionamento'), ML + 4, y + 6);
+    doc.text(s(ckA + ' Com avarias'), ML + 4, y + 11);
+
+    if (condicao === 'avarias' && avariasText) {
+      setFont(7, 'bold', [90,100,130]);
+      doc.text(s('DESCRIÇÃO DAS AVARIAS:'), ML + 4, y + 17);
+      setFont(8, 'normal', [30,35,60]);
+      doc.text(s(avariasText), ML + 50, y + 17, { maxWidth: CW - 55 });
+      y += 24;
+    } else {
+      y += 14;
+    }
+
+    // DECLARAÇÕES
+    drawRect(ML, y, CW, 7, [220,228,245], [160,170,210]);
+    setFont(7.5, 'bold', [15,30,80]);
+    doc.text(s('DECLARAÇÕES'), ML + 3, y + 5);
+    y += 7;
+
+    const declText = 'O colaborador declara que está devolvendo o equipamento recebido anteriormente, conforme termo de responsabilidade. A empresa declara que recebeu o equipamento nas condições acima descritas. Eventuais danos poderão ser avaliados conforme políticas internas da empresa.';
+    drawRect(ML, y, CW, 20, [248,249,253], [210,215,230]);
+    setFont(8, 'normal', [30,35,60]);
+    const dLines = doc.splitTextToSize(s(declText), CW - 8);
+    doc.text(s(dLines), ML + 4, y + 6);
+    y += 22;
+  }
+
+  y += 4;
+
+  // ─── ASSINATURAS ─────────────────────────────────────────────
+  const sigW = (CW - 8) / 2;
+  const sigH = 26;
+
+  function drawSigBox(x, yw, label, sigKey, nomeLinha) {
+    drawRect(x, yw, sigW, sigH, [248,249,253], [210,215,230]);
+    setFont(7, 'bold', [90,100,130]);
+    doc.text(s(label), x + 4, yw + 5);
+    // linha de assinatura
+    line(x + 4, yw + sigH - 6, x + sigW - 4, [180,185,205], 0.4);
+
+    const dataURL = getSigDataURL(sigKey);
+    if (dataURL) {
+      try {
+        doc.addImage(dataURL, 'PNG', x + 4, yw + 6, sigW - 8, sigH - 14);
+      } catch(e) { /* silently skip if blank */ }
+    } else {
+      setFont(7, 'normal', [190,190,190]);
+      doc.text(s('(sem assinatura)'), x + 4, yw + sigH - 9);
+    }
+
+    // Nome abaixo da linha de assinatura
+    if (nomeLinha) {
+      setFont(7.5, 'normal', [40,40,60]);
+      doc.text(s(nomeLinha), x + 4, yw + sigH - 1.5);
+    }
+  }
+
+  // Ajuste dinâmico: se y estiver alto, compactar para caber na página
+  const espacoRestante = (PH - 30) - y; // 30mm reservado para assinaturas + rodapé
+  const sigHFinal = Math.min(sigH, Math.max(20, espacoRestante - 14));
+
+  // Sobrescrever sigH localmente para drawSigBox
+  const _origSigH = sigH;
+  // Usar sigHFinal nas chamadas abaixo
+  function drawSigBoxFinal(x, yw, label, sigKey, nomeLinha) {
+    drawRect(x, yw, sigW, sigHFinal, [248,249,253], [210,215,230]);
+    setFont(7, 'bold', [90,100,130]);
+    doc.text(s(label), x + 4, yw + 5);
+    line(x + 4, yw + sigHFinal - 6, x + sigW - 4, [180,185,205], 0.4);
+    const dataURL = getSigDataURL(sigKey);
+    if (dataURL) {
+      try { doc.addImage(dataURL, 'PNG', x + 4, yw + 6, sigW - 8, sigHFinal - 14); } catch(e) {}
+    } else {
+      setFont(7, 'normal', [190,190,190]);
+      doc.text(s('(sem assinatura)'), x + 4, yw + sigHFinal - 9);
+    }
+    if (nomeLinha) {
+      setFont(7.5, 'normal', [40,40,60]);
+      doc.text(s(nomeLinha), x + 4, yw + sigHFinal - 1.5);
+    }
+  }
+
+  drawSigBoxFinal(ML, y, 'ASSINATURA DO COLABORADOR', 'colaborador', v('nome'));
+  const x2 = ML + sigW + 8;
+  const labelTI = isResp ? 'RESPONSÁVEL PELA ENTREGA (TI)' : isTroca ? 'RESPONSÁVEL PELA TROCA (TI)' : 'RESPONSÁVEL PELO RECEBIMENTO (TI)';
+  drawSigBoxFinal(x2, y, labelTI, 'ti', v('nome-ti'));
+
+  y += sigHFinal + 4;
+
+
+
+  // Local e data
+  setFont(8, 'normal', [60,70,100]);
+  doc.text(s(`Local: ${v('unidade') || estado.empresa}`), ML, y + 4);
+  const hoje = new Date();
+  const dia = String(hoje.getDate()).padStart(2, '0');
+  const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+  const ano = hoje.getFullYear();
+  doc.text(s(`Data: ${dia} / ${mes} / ${ano}`), PW - MR, y + 4, { align: 'right' });
+
+  y += 10;
+
+  // ─── RODAPÉ ──────────────────────────────────────────────────
+  line(ML, PH - 12, PW - MR, [180,180,180], 0.3);
+  setFont(7, 'normal', [80,80,80]);
+  doc.text(s(`Este documento está classificado como INTERNO — ${estado.empresa.toUpperCase()}`), PW / 2, PH - 7, { align: 'center' });
+
+  // ─── NOME DO ARQUIVO ─────────────────────────────────────────
+  const tipoSlug  = isResp ? 'Responsabilidade' : isTroca ? 'Troca' : 'Devolucao';
+  const nomeSlug  = v('nome').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '') || 'sem_nome';
+  const matSlug   = v('matricula').replace(/[^a-zA-Z0-9]/g, '') || 'sem_matricula';
+  const deptSlug  = v('departamento').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '') || 'sem_depto';
+  const filename  = `${nomeSlug}_${matSlug}_${deptSlug}_${tipoSlug}.pdf`;
+
+  if (returnDoc) return doc;
+  doc.save(filename);
+  showToast('toast');
+}
+</script>
+<!-- MODAL: termos pendentes -->
+<div id="modal-pendentes-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:998; align-items:center; justify-content:center; padding:20px;">
+  <div style="background:#fff; border-radius:14px; padding:24px; max-width:560px; width:100%; max-height:80vh; display:flex; flex-direction:column;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+      <div style="font-weight:600; font-size:16px;">📋 Termos Pendentes</div>
+      <button onclick="document.getElementById('modal-pendentes-overlay').style.display='none'" style="background:none; border:none; font-size:20px; cursor:pointer; color:#888;">✕</button>
+    </div>
+    <div id="lista-pendentes" style="overflow-y:auto; flex:1;">
+      <div style="text-align:center; color:#888; padding:30px 0;">Carregando...</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast-carregado" style="background:#6b46c1;">✓ Termo carregado no formulário</div>
+
+<!-- BANNER: assinatura recebida em tempo real -->
+<div id="banner-realtime" style="display:none; position:fixed; top:0; left:0; right:0; background:#16a34a; color:#fff; padding:14px 20px; z-index:1000; text-align:center; font-size:14px; font-weight:500; box-shadow:0 2px 8px rgba(0,0,0,.15);">
+  <span id="banner-realtime-texto"></span>
+  <button onclick="document.getElementById('banner-realtime').style.display='none'" style="margin-left:16px; background:rgba(255,255,255,.25); border:none; color:#fff; border-radius:6px; padding:4px 10px; font-size:12px; cursor:pointer;">Ok, entendi</button>
+</div>
+
+</body>
+</html>
