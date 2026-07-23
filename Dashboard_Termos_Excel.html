@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dashboard — Controle de Termos TI</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f0f2f7;
+    color: #1a1a2e;
+    min-height: 100vh;
+  }
+
+  header {
+    background: #1a1a2e;
+    color: #fff;
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 3px solid #cc0000;
+  }
+
+  header h1 { font-size: 20px; font-weight: 700; }
+  header span { font-size: 12px; color: #aaa; }
+
+  .header-actions { display: flex; gap: 10px; align-items: center; }
+
+  .btn {
+    border: none;
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-family: inherit;
+  }
+  .btn-red   { background: #cc0000; color: #fff; }
+  .btn-red:hover { background: #aa0000; }
+  .btn-ghost { background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.25); }
+  .btn-ghost:hover { background: rgba(255,255,255,.2); }
+
+  main { padding: 28px 32px; max-width: 1400px; margin: 0 auto; }
+
+  /* Tela de boas-vindas */
+  .welcome {
+    background: #fff;
+    border-radius: 16px;
+    padding: 60px 40px;
+    text-align: center;
+    box-shadow: 0 2px 12px rgba(0,0,0,.07);
+    max-width: 520px;
+    margin: 60px auto;
+  }
+  .welcome-icon { font-size: 48px; margin-bottom: 20px; }
+  .welcome h2 { font-size: 22px; font-weight: 700; margin-bottom: 10px; }
+  .welcome p { font-size: 14px; color: #666; line-height: 1.6; margin-bottom: 28px; }
+  .welcome-steps {
+    text-align: left;
+    background: #f8f9fd;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 28px;
+    font-size: 13px;
+    color: #444;
+    line-height: 2;
+  }
+  .welcome-steps span { font-weight: 600; color: #cc0000; }
+
+  input[type="file"] { display: none; }
+
+  /* KPIs */
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .kpi {
+    background: #fff;
+    border-radius: 14px;
+    padding: 20px 22px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.07);
+    border-left: 4px solid #cc0000;
+  }
+  .kpi.azul    { border-left-color: #0078d4; }
+  .kpi.verde   { border-left-color: #1a6b3a; }
+  .kpi.laranja { border-left-color: #e67e00; }
+
+  .kpi-valor { font-size: 36px; font-weight: 800; color: #1a1a2e; line-height: 1; margin-bottom: 4px; }
+  .kpi-label { font-size: 12px; color: #666; font-weight: 500; text-transform: uppercase; letter-spacing: .05em; }
+
+  /* Filtros */
+  .filtros {
+    background: #fff;
+    border-radius: 14px;
+    padding: 16px 22px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.07);
+    margin-bottom: 24px;
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+  .filtros label { font-size: 12px; font-weight: 600; color: #666; display: block; margin-bottom: 4px; }
+  .filtros select, .filtros input[type="text"] {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 7px 12px;
+    font-size: 13px;
+    color: #1a1a2e;
+    background: #f8f9fd;
+    min-width: 160px;
+    font-family: inherit;
+  }
+  .btn-limpar {
+    background: none;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 7px 14px;
+    font-size: 13px;
+    color: #888;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-limpar:hover { border-color: #cc0000; color: #cc0000; }
+
+  /* Gráficos */
+  .charts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+
+  .chart-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 22px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.07);
+  }
+  .chart-card h3 {
+    font-size: 14px; font-weight: 700; color: #1a1a2e;
+    margin-bottom: 16px; padding-bottom: 10px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .chart-wrap { position: relative; height: 240px; }
+
+  /* Tabela */
+  .tabela-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 22px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.07);
+  }
+  .tabela-card h3 {
+    font-size: 14px; font-weight: 700; color: #1a1a2e;
+    margin-bottom: 16px; padding-bottom: 10px;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .tabela-wrap { overflow-x: auto; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead th {
+    background: #f0f2f7; padding: 10px 12px;
+    text-align: left; font-weight: 700; color: #444;
+    border-bottom: 2px solid #e0e0e0; white-space: nowrap;
+  }
+  tbody tr { border-bottom: 1px solid #f0f0f0; transition: background .1s; }
+  tbody tr:hover { background: #f8f9ff; }
+  tbody td { padding: 9px 12px; color: #333; }
+
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge-resp  { background: #ffe0e0; color: #cc0000; }
+  .badge-dev   { background: #e0f0e8; color: #1a6b3a; }
+  .badge-troca { background: #e0eeff; color: #0078d4; }
+
+  .empty { text-align: center; padding: 40px; color: #bbb; font-size: 13px; }
+
+  .arquivo-nome {
+    font-size: 12px; color: #aaa;
+    background: rgba(255,255,255,.1);
+    padding: 4px 10px; border-radius: 6px;
+  }
+
+  @media (max-width: 900px) {
+    .kpis { grid-template-columns: repeat(2, 1fr); }
+    .charts { grid-template-columns: 1fr; }
+    main { padding: 16px; }
+    header { padding: 14px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>📊 Dashboard — Controle de Termos TI</h1>
+    <span id="ultima-atualizacao">Nenhuma planilha carregada</span>
+  </div>
+  <div class="header-actions">
+    <span class="arquivo-nome" id="nome-arquivo" style="display:none;"></span>
+    <button class="btn btn-ghost" id="btn-trocar" onclick="trocarPlanilha()" style="display:none;">↗ Trocar planilha</button>
+    <button class="btn btn-ghost" id="btn-refresh" onclick="recarregarPlanilha()" style="display:none;">↻ Atualizar</button>
+    <button class="btn btn-red" onclick="abrirSeletor()">📂 Vincular planilha</button>
+  </div>
+</header>
+
+<input type="file" id="file-input" accept=".xlsx,.xls" onchange="lerPlanilha(event)" />
+
+<main id="main-content">
+  <!-- Tela de boas-vindas -->
+  <div class="welcome" id="tela-boas-vindas">
+    <div class="welcome-icon">📊</div>
+    <h2>Dashboard de Termos TI</h2>
+    <p>Vincule sua planilha do Excel para visualizar os dados de controle de termos.</p>
+    <div class="welcome-steps">
+      <span>1.</span> Baixe a planilha do OneDrive para seu computador<br>
+      <span>2.</span> Clique em "Vincular planilha" acima<br>
+      <span>3.</span> Selecione o arquivo <strong>Controle de Termos.xlsx</strong><br>
+      <span>4.</span> Os dados carregam automaticamente
+    </div>
+    <button class="btn btn-red" style="width:100%; padding:14px;" onclick="abrirSeletor()">
+      📂 Vincular planilha agora
+    </button>
+  </div>
+
+  <!-- Dashboard (oculto até carregar) -->
+  <div id="dashboard" style="display:none;">
+    <div class="kpis">
+      <div class="kpi"><div class="kpi-valor" id="kpi-total">—</div><div class="kpi-label">Total de Termos</div></div>
+      <div class="kpi azul"><div class="kpi-valor" id="kpi-resp">—</div><div class="kpi-label">Responsabilidade</div></div>
+      <div class="kpi verde"><div class="kpi-valor" id="kpi-dev">—</div><div class="kpi-label">Devolução</div></div>
+      <div class="kpi laranja"><div class="kpi-valor" id="kpi-troca">—</div><div class="kpi-label">Troca</div></div>
+    </div>
+
+    <div class="filtros">
+      <div><label>Tipo de Termo</label>
+        <select id="filtro-tipo" onchange="aplicarFiltros()">
+          <option value="">Todos</option>
+          <option value="Responsabilidade">Responsabilidade</option>
+          <option value="Devolucao">Devolução</option>
+          <option value="Troca">Troca</option>
+        </select>
+      </div>
+      <div><label>Equipamento</label>
+        <select id="filtro-equip" onchange="aplicarFiltros()"><option value="">Todos</option></select>
+      </div>
+      <div><label>Empresa</label>
+        <select id="filtro-empresa" onchange="aplicarFiltros()"><option value="">Todas</option></select>
+      </div>
+      <div><label>Buscar</label>
+        <input type="text" id="filtro-busca" placeholder="Nome, matrícula, série, patrimônio..." oninput="aplicarFiltros()" />
+      </div>
+      <div>
+        <button class="btn-limpar" onclick="limparFiltros()">✕ Limpar filtros</button>
+      </div>
+    </div>
+
+    <div class="charts">
+      <div class="chart-card"><h3>Tipos de Termo</h3><div class="chart-wrap"><canvas id="chart-tipo"></canvas></div></div>
+      <div class="chart-card"><h3>Equipamentos Mais Entregues</h3><div class="chart-wrap"><canvas id="chart-equip"></canvas></div></div>
+      <div class="chart-card"><h3>Termos por Unidade (Top 10)</h3><div class="chart-wrap"><canvas id="chart-unidade"></canvas></div></div>
+      <div class="chart-card"><h3>Responsáveis pela Entrega (Top 10)</h3><div class="chart-wrap"><canvas id="chart-ti"></canvas></div></div>
+    </div>
+
+    <div class="tabela-card">
+      <h3>
+        <span>Registros</span>
+        <span id="count-registros" style="font-size:12px;color:#888;font-weight:400;"></span>
+      </h3>
+      <div class="tabela-wrap">
+        <div id="tabela-container"><div class="empty">Carregando...</div></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+let todosRegistros = [];
+let charts = {};
+let fileHandle = null;
+let ultimoArquivo = null;
+
+// ─── Mapeamento de colunas ────────────────────────────────────
+// Ajusta conforme cabeçalhos reais da planilha
+const COLS = {
+  data:        ['Data/Hora', 'Data', 'DataHora', 'created_at'],
+  chamado:     ['Chamado', 'Numero_chamado', 'Chamado/OS'],
+  colaborador: ['Colaborador', 'Nome_colaborador', 'Nome Colaborador'],
+  matricula:   ['Matricula', 'Matrícula'],
+  tipo:        ['Tipo'],
+  equipamento: ['Equipamento'],
+  serie:       ['Numero_serie', 'Número de Série', 'Numero Serie', 'numero_serie'],
+  patrimonio:  ['Patrimonio_imei', 'Patrimônio/IMEI', 'Patrimonio', 'patrimonio_imei'],
+  empresa:     ['Empresa'],
+  unidade:     ['Unidade'],
+  gestor:      ['Gestor', 'Nome_gestor', 'nome_gestor'],
+  tecnico_ti:  ['Tecnico_TI', 'Técnico TI', 'nome_ti', 'TI'],
+  filename:    ['Arquivo', 'filename', 'Filename']
+};
+
+function resolverCampo(row, opcoes) {
+  for (const op of opcoes) {
+    if (row[op] !== undefined && row[op] !== null && row[op] !== '') return String(row[op]);
+  }
+  return '';
+}
+
+function normalizarRegistro(row) {
+  return {
+    data:        resolverCampo(row, COLS.data),
+    chamado:     resolverCampo(row, COLS.chamado),
+    colaborador: resolverCampo(row, COLS.colaborador),
+    matricula:   resolverCampo(row, COLS.matricula),
+    tipo:        resolverCampo(row, COLS.tipo),
+    equipamento: resolverCampo(row, COLS.equipamento),
+    serie:       resolverCampo(row, COLS.serie),
+    patrimonio:  resolverCampo(row, COLS.patrimonio),
+    empresa:     resolverCampo(row, COLS.empresa),
+    unidade:     resolverCampo(row, COLS.unidade),
+    gestor:      resolverCampo(row, COLS.gestor),
+    tecnico_ti:  resolverCampo(row, COLS.tecnico_ti),
+    filename:    resolverCampo(row, COLS.filename)
+  };
+}
+
+function abrirSeletor() {
+  document.getElementById('file-input').click();
+}
+
+function trocarPlanilha() {
+  document.getElementById('file-input').click();
+}
+
+async function lerPlanilha(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  ultimoArquivo = file;
+  await processarArquivo(file);
+  event.target.value = '';
+}
+
+async function processarArquivo(file) {
+  try {
+    const buffer = await file.arrayBuffer();
+    const wb = XLSX.read(buffer, { type: 'array', cellDates: true });
+
+    // Pega primeira aba ou aba "TabelaTermos"
+    const nomesAbas = wb.SheetNames;
+    const abaAlvo = nomesAbas.find(n => n.toLowerCase().includes('termo') || n.toLowerCase().includes('tabela')) || nomesAbas[0];
+    const ws = wb.Sheets[abaAlvo];
+
+    const raw = XLSX.utils.sheet_to_json(ws, { defval: '' });
+    todosRegistros = raw.map(normalizarRegistro).filter(r => r.tipo || r.colaborador || r.equipamento);
+
+    document.getElementById('nome-arquivo').textContent = file.name;
+    document.getElementById('nome-arquivo').style.display = 'inline';
+    document.getElementById('btn-trocar').style.display = 'inline';
+    document.getElementById('btn-refresh').style.display = 'inline';
+    document.getElementById('ultima-atualizacao').textContent =
+      'Atualizado: ' + new Date().toLocaleString('pt-BR') + ' · ' + todosRegistros.length + ' registros';
+
+    document.getElementById('tela-boas-vindas').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+
+    popularFiltros();
+    aplicarFiltros();
+
+  } catch(e) {
+    console.error(e);
+    alert('Erro ao ler a planilha: ' + e.message + '\n\nVerifique se o arquivo é um Excel válido (.xlsx).');
+  }
+}
+
+async function recarregarPlanilha() {
+  if (!ultimoArquivo) { abrirSeletor(); return; }
+  // Re-lê o mesmo objeto File (dados em memória do momento do upload)
+  await processarArquivo(ultimoArquivo);
+}
+
+function popularFiltros() {
+  const equips   = [...new Set(todosRegistros.map(r => r.equipamento).filter(Boolean))].sort();
+  const empresas = [...new Set(todosRegistros.map(r => r.empresa).filter(Boolean))].sort();
+
+  const selEquip = document.getElementById('filtro-equip');
+  selEquip.innerHTML = '<option value="">Todos</option>';
+  equips.forEach(e => selEquip.innerHTML += `<option value="${e}">${e}</option>`);
+
+  const selEmp = document.getElementById('filtro-empresa');
+  selEmp.innerHTML = '<option value="">Todas</option>';
+  empresas.forEach(e => selEmp.innerHTML += `<option value="${e}">${e}</option>`);
+}
+
+function limparFiltros() {
+  document.getElementById('filtro-tipo').value = '';
+  document.getElementById('filtro-equip').value = '';
+  document.getElementById('filtro-empresa').value = '';
+  document.getElementById('filtro-busca').value = '';
+  aplicarFiltros();
+}
+
+function aplicarFiltros() {
+  const tipo    = document.getElementById('filtro-tipo').value;
+  const equip   = document.getElementById('filtro-equip').value;
+  const empresa = document.getElementById('filtro-empresa').value;
+  const busca   = document.getElementById('filtro-busca').value.toLowerCase();
+
+  const filtrados = todosRegistros.filter(r => {
+    if (tipo    && r.tipo !== tipo) return false;
+    if (equip   && r.equipamento !== equip) return false;
+    if (empresa && r.empresa !== empresa) return false;
+    if (busca && !(
+      r.colaborador.toLowerCase().includes(busca) ||
+      r.matricula.toLowerCase().includes(busca) ||
+      r.chamado.toLowerCase().includes(busca) ||
+      r.serie.toLowerCase().includes(busca) ||
+      r.patrimonio.toLowerCase().includes(busca)
+    )) return false;
+    return true;
+  });
+
+  atualizarKPIs(filtrados);
+  atualizarGraficos(filtrados);
+  atualizarTabela(filtrados);
+}
+
+function atualizarKPIs(dados) {
+  document.getElementById('kpi-total').textContent = dados.length;
+  document.getElementById('kpi-resp').textContent  = dados.filter(r => r.tipo === 'Responsabilidade').length;
+  document.getElementById('kpi-dev').textContent   = dados.filter(r => r.tipo === 'Devolucao' || r.tipo === 'Devolução').length;
+  document.getElementById('kpi-troca').textContent = dados.filter(r => r.tipo === 'Troca').length;
+}
+
+function contarPor(dados, campo, top = 10) {
+  const contagem = {};
+  dados.forEach(r => {
+    const val = r[campo] || 'Não informado';
+    contagem[val] = (contagem[val] || 0) + 1;
+  });
+  return Object.entries(contagem).sort((a, b) => b[1] - a[1]).slice(0, top);
+}
+
+function atualizarGraficos(dados) {
+  Object.values(charts).forEach(c => c.destroy());
+  charts = {};
+
+  const CORES = ['#cc0000','#0078d4','#1a6b3a','#e67e00','#8e44ad','#16a085','#d35400','#2c3e50','#c0392b','#27ae60'];
+
+  const tipos = contarPor(dados, 'tipo');
+  charts.tipo = new Chart(document.getElementById('chart-tipo'), {
+    type: 'doughnut',
+    data: {
+      labels: tipos.map(t => t[0] === 'Devolucao' ? 'Devolução' : t[0]),
+      datasets: [{ data: tipos.map(t => t[1]), backgroundColor: ['#cc0000','#0078d4','#e67e00'], borderWidth: 2, borderColor: '#fff' }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 12 } } } } }
+  });
+
+  const equips = contarPor(dados, 'equipamento');
+  charts.equip = new Chart(document.getElementById('chart-equip'), {
+    type: 'bar',
+    data: {
+      labels: equips.map(e => e[0]),
+      datasets: [{ data: equips.map(e => e[1]), backgroundColor: CORES, borderRadius: 6 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+  });
+
+  const unidades = contarPor(dados, 'unidade');
+  charts.unidade = new Chart(document.getElementById('chart-unidade'), {
+    type: 'bar',
+    data: {
+      labels: unidades.map(u => u[0]),
+      datasets: [{ data: unidades.map(u => u[1]), backgroundColor: '#0078d4', borderRadius: 6 }]
+    },
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+  });
+
+  const tis = contarPor(dados, 'tecnico_ti');
+  charts.ti = new Chart(document.getElementById('chart-ti'), {
+    type: 'bar',
+    data: {
+      labels: tis.map(g => g[0]),
+      datasets: [{ data: tis.map(g => g[1]), backgroundColor: '#1a6b3a', borderRadius: 6 }]
+    },
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+  });
+}
+
+function atualizarTabela(dados) {
+  document.getElementById('count-registros').textContent = dados.length + ' registro(s)';
+
+  if (dados.length === 0) {
+    document.getElementById('tabela-container').innerHTML = '<div class="empty">Nenhum registro encontrado.</div>';
+    return;
+  }
+
+  const badgeClasse = tipo => {
+    if (tipo === 'Responsabilidade') return 'badge-resp';
+    if (tipo === 'Devolucao' || tipo === 'Devolução') return 'badge-dev';
+    return 'badge-troca';
+  };
+
+  const badgeLabel = tipo => tipo === 'Devolucao' ? 'Devolução' : (tipo || '—');
+
+  const fmtData = val => {
+    if (!val) return '—';
+    if (val instanceof Date) return val.toLocaleString('pt-BR');
+    const d = new Date(val);
+    return isNaN(d) ? String(val) : d.toLocaleString('pt-BR');
+  };
+
+  document.getElementById('tabela-container').innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Data/Hora</th>
+          <th>Chamado</th>
+          <th>Colaborador</th>
+          <th>Matrícula</th>
+          <th>Tipo</th>
+          <th>Equipamento</th>
+          <th>Nº Série</th>
+          <th>Patrimônio/IMEI</th>
+          <th>Empresa</th>
+          <th>Unidade</th>
+          <th>Técnico TI</th>
+          <th>Gestor</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${dados.map(r => `
+          <tr>
+            <td>${fmtData(r.data)}</td>
+            <td>${r.chamado || '—'}</td>
+            <td>${r.colaborador || '—'}</td>
+            <td>${r.matricula || '—'}</td>
+            <td><span class="badge ${badgeClasse(r.tipo)}">${badgeLabel(r.tipo)}</span></td>
+            <td>${r.equipamento || '—'}</td>
+            <td>${r.serie || '—'}</td>
+            <td>${r.patrimonio || '—'}</td>
+            <td>${r.empresa || '—'}</td>
+            <td>${r.unidade || '—'}</td>
+            <td>${r.tecnico_ti || '—'}</td>
+            <td>${r.gestor || '—'}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+</script>
+</body>
+</html>
